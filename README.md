@@ -106,5 +106,3 @@ This project successfully demonstrates a real-world Data Science solution for te
 
 **Lithik Raj**  
 Data Scientist and AI/ML Enthusiast  
-
-## ⚙️ Methodology (Pipeline)
