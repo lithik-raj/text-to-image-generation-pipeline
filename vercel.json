@@ -5,7 +5,7 @@
       "src": "api/index.py",
       "use": "@vercel/python",
       "config": {
-        "includeFiles": ["sample_output_task1.png", "index.html", "api/**"]
+        "includeFiles": ["dog*.png", "sample_output_task1.png", "index.html", "api/**"]
       }
     }
   ],
