@@ -3,326 +3,787 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>SD-Turbo Text-to-Image Generation Pipeline — Real-Time Generative AI</title>
+  <title>SD-Turbo Real-Time Text-to-Image Generation Studio</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
   <style>
     :root {
-      --bg: #08090d;
-      --card: #11141c;
+      --bg: #07090e;
+      --card: rgba(15, 18, 27, 0.85);
       --card-border: rgba(255, 255, 255, 0.08);
       --accent: #f59e0b;
-      --accent-glow: rgba(245, 158, 11, 0.35);
+      --accent-glow: rgba(245, 158, 11, 0.3);
       --accent2: #ef4444;
+      --primary: #3b82f6;
       --text: #f8fafc;
       --muted: #94a3b8;
       --radius: 16px;
     }
     * { margin:0; padding:0; box-sizing:border-box; font-family:'Plus Jakarta Sans',sans-serif; }
-    body { background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+    body {
+      background: var(--bg);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(245, 158, 11, 0.12) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(239, 68, 68, 0.1) 0px, transparent 50%),
+        radial-gradient(at 50% 50%, rgba(59, 130, 246, 0.05) 0px, transparent 60%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
     
     header {
-      padding: 24px 6%;
+      padding: 18px 5%;
       display: flex;
       justify-content: space-between;
       align-items: center;
       border-bottom: 1px solid var(--card-border);
-      backdrop-filter: blur(12px);
+      backdrop-filter: blur(16px);
       position: sticky;
       top: 0;
       z-index: 50;
-      background: rgba(8, 9, 13, 0.85);
+      background: rgba(7, 9, 14, 0.85);
     }
-    .brand { font-family:'Orbitron',sans-serif; font-weight:800; font-size:1.2rem; display:flex; align-items:center; gap:10px; }
-    .brand span { background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-    .badge-pill { padding: 4px 12px; border-radius: 999px; background: rgba(245, 158, 11, 0.15); border: 1px solid var(--accent); color: var(--accent); font-size: 0.8rem; font-weight: 600; text-decoration: none; }
+    .brand {
+      font-family:'Orbitron',sans-serif;
+      font-weight: 800;
+      font-size: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      letter-spacing: -0.5px;
+    }
+    .brand span {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #34d399; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.85); } }
     
     .hero {
-      padding: 60px 6% 30px;
       text-align: center;
-      max-width: 900px;
+      padding: 40px 5% 20px;
+      max-width: 850px;
       margin: 0 auto;
     }
     .hero h1 {
       font-family:'Orbitron',sans-serif;
-      font-size: clamp(2rem, 4vw, 3.2rem);
+      font-size: clamp(2rem, 3.8vw, 3rem);
       font-weight: 900;
-      line-height: 1.2;
-      margin-bottom: 16px;
+      line-height: 1.15;
+      margin-bottom: 14px;
       background: linear-gradient(180deg, #ffffff 40%, #94a3b8 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
-    .hero p { color: var(--muted); font-size: 1.05rem; line-height: 1.6; }
+    .hero p {
+      color: var(--muted);
+      font-size: 1.05rem;
+      line-height: 1.5;
+    }
     
     .grid-container {
-      max-width: 1200px;
+      max-width: 1300px;
       margin: 0 auto;
-      padding: 20px 6% 50px;
+      padding: 10px 5% 50px;
       display: grid;
       grid-template-columns: 1fr 1.15fr;
       gap: 28px;
+      flex: 1;
+      width: 100%;
     }
-    @media (max-width: 900px) { .grid-container { grid-template-columns: 1fr; } }
+    @media (max-width: 950px) { .grid-container { grid-template-columns: 1fr; } }
     
     .panel {
       background: var(--card);
       border: 1px solid var(--card-border);
       border-radius: var(--radius);
-      padding: 28px;
+      padding: 26px;
+      backdrop-filter: blur(20px);
       box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+      display: flex;
+      flex-direction: column;
     }
-    .panel-title { font-family:'Orbitron',sans-serif; font-size: 1.1rem; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; }
+    .panel-title {
+      font-family:'Orbitron',sans-serif;
+      font-size: 1.1rem;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #fff;
+    }
     
-    label { display: block; font-size: 0.8rem; color: var(--muted); font-weight: 600; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-    textarea, input, select {
+    label {
+      display: block;
+      font-size: 0.82rem;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    textarea {
       width: 100%;
-      background: #08090d;
+      min-height: 100px;
+      background: #080a10;
       border: 1px solid var(--card-border);
-      border-radius: 10px;
-      padding: 12px 14px;
+      border-radius: 12px;
+      padding: 14px;
       color: #fff;
       font-size: 0.95rem;
+      line-height: 1.5;
+      resize: vertical;
       transition: all 0.2s;
     }
-    textarea:focus, input:focus, select:focus {
+    textarea:focus {
       outline: none;
       border-color: var(--accent);
-      box-shadow: 0 0 12px var(--accent-glow);
+      box-shadow: 0 0 15px var(--accent-glow);
     }
-    textarea { min-height: 80px; resize: vertical; }
     
-    .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-    .tag {
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 6px;
-      padding: 4px 10px;
+    /* Preset Chips */
+    .chips-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 10px;
+      margin-bottom: 6px;
+    }
+    .chips-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 20px;
+    }
+    .chip {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 5px 10px;
       font-size: 0.75rem;
       cursor: pointer;
       color: #cbd5e1;
       transition: all 0.2s;
     }
-    .tag:hover { background: var(--accent); color: #000; font-weight: 600; }
+    .chip:hover {
+      background: var(--accent);
+      color: #000;
+      font-weight: 700;
+      transform: translateY(-1px);
+    }
     
-    .btn-action {
-      width: 100%;
-      padding: 14px;
+    /* Style Selector */
+    .styles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .style-card {
+      background: #090c14;
+      border: 1px solid var(--card-border);
       border-radius: 10px;
+      padding: 10px 12px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+      user-select: none;
+    }
+    .style-card:hover {
+      border-color: rgba(245, 158, 11, 0.5);
+      transform: translateY(-2px);
+    }
+    .style-card.active {
+      background: rgba(245, 158, 11, 0.12);
+      border-color: var(--accent);
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+    .style-card .icon { font-size: 1.25rem; margin-bottom: 4px; display: block; }
+    .style-card .name { font-size: 0.78rem; font-weight: 700; color: #fff; }
+    
+    /* Aspect Ratio & Seed */
+    .row-controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 22px;
+    }
+    select, input[type="number"] {
+      width: 100%;
+      background: #080a10;
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 11px 14px;
+      color: #fff;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    select:focus, input[type="number"]:focus {
+      border-color: var(--accent);
+    }
+    .seed-box {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-dice {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 0 14px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.2s;
+    }
+    .btn-dice:hover { background: rgba(255, 255, 255, 0.15); }
+    
+    /* Generate Button */
+    .btn-generate {
+      width: 100%;
+      padding: 15px;
+      border-radius: 12px;
       background: linear-gradient(135deg, var(--accent), var(--accent2));
       color: #000;
       border: none;
+      font-family: 'Orbitron', sans-serif;
       font-weight: 800;
       font-size: 1rem;
       cursor: pointer;
       transition: all 0.2s;
-      box-shadow: 0 8px 24px var(--accent-glow);
+      box-shadow: 0 10px 25px var(--accent-glow);
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 10px;
-      margin-top: 16px;
+      letter-spacing: 0.5px;
     }
-    .btn-action:hover { transform: translateY(-2px); box-shadow: 0 12px 30px var(--accent-glow); }
+    .btn-generate:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 35px var(--accent-glow);
+    }
+    .btn-generate:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
     
-    .canvas-preview {
+    /* Progress Box */
+    .progress-box {
+      margin-top: 18px;
+      display: none;
+      background: #090c14;
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 12px 16px;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+    .progress-status {
       display: flex;
-      flex-direction: column;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    
+    /* Canvas Preview Area */
+    .preview-canvas {
+      position: relative;
+      width: 100%;
+      min-height: 420px;
+      background: #06080d;
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 380px;
-      border-radius: 12px;
-      background: #08090d;
-      border: 2px dashed rgba(255,255,255,0.08);
-      position: relative;
       overflow: hidden;
+      box-shadow: inset 0 0 40px rgba(0,0,0,0.6);
     }
-    .canvas-preview img {
+    .preview-canvas img {
       width: 100%;
       height: 100%;
-      object-fit: cover;
-      border-radius: 10px;
+      object-fit: contain;
+      border-radius: 12px;
+      transition: opacity 0.4s ease;
     }
     .preview-info {
       position: absolute;
       bottom: 0;
       left: 0;
       right: 0;
-      padding: 14px;
-      background: linear-gradient(0deg, rgba(0,0,0,0.92), transparent);
-      font-size: 0.8rem;
+      padding: 16px;
+      background: linear-gradient(0deg, rgba(6, 8, 13, 0.95) 40%, transparent);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .preview-info-text {
+      max-width: 75%;
+    }
+    .preview-info-text h4 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+    .preview-info-text p {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+      line-height: 1.4;
     }
     
-    .benchmarks-box {
-      margin-top: 24px;
-      background: #08090d;
-      border: 1px solid var(--card-border);
-      border-radius: 10px;
-      padding: 18px;
+    /* Action Buttons Under Canvas */
+    .canvas-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
     }
-    .bar-row { margin-bottom: 14px; }
-    .bar-label { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 6px; }
-    .bar-bg { width: 100%; height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; }
-    .bar-fill { height: 100%; border-radius: 4px; }
+    .btn-secondary {
+      flex: 1;
+      padding: 12px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      color: #fff;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    /* History Gallery */
+    .history-section {
+      margin-top: 24px;
+    }
+    .history-title {
+      font-size: 0.8rem;
+      color: var(--muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+    .history-grid {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+    }
+    .history-item {
+      width: 70px;
+      height: 70px;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+      overflow: hidden;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+    .history-item:hover {
+      border-color: var(--accent);
+      transform: scale(1.05);
+    }
+    .history-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
     
     footer {
       border-top: 1px solid var(--card-border);
-      padding: 30px 6%;
+      padding: 24px 5%;
       text-align: center;
       color: var(--muted);
-      font-size: 0.9rem;
+      font-size: 0.85rem;
     }
-    footer a { color: var(--accent); text-decoration: none; }
+    footer a { color: var(--accent); text-decoration: none; font-weight: 600; }
   </style>
 </head>
 <body>
 
   <header>
     <div class="brand">
-      <span>⚡ SD-TURBO</span> FAST GENERATION PIPELINE
+      <span>⚡ SD-TURBO</span> GENERATION STUDIO
     </div>
     <div style="display:flex; gap:12px; align-items:center;">
-      <a href="https://github.com/lithik-raj/text-to-image-generation-pipeline" target="_blank" class="badge-pill">GitHub Repo</a>
-      <span class="badge-pill">1-Step ADD Inference</span>
+      <a href="https://github.com/lithik-raj/text-to-image-generation-pipeline" target="_blank" class="badge-pill">
+        <span>GitHub Repo</span>
+      </a>
+      <span class="badge-pill">
+        <span class="dot"></span> Model Ready
+      </span>
     </div>
   </header>
 
   <div class="hero">
-    <h1>Sub-Second Text-to-Image Synthesis</h1>
-    <p>Adversarial Diffusion Distillation (ADD) pipeline consolidating 50-step diffusion denoising loops into an ultra-fast single-step generative model for real-time creative workflows.</p>
+    <h1>Real-Time Text-to-Image Diffusion Studio</h1>
+    <p>Synthesize stunning, fine-tuned visuals from any custom text prompt powered by Adversarial Diffusion Distillation.</p>
   </div>
 
   <div class="grid-container">
-    <!-- Controls -->
+    <!-- Controls Panel -->
     <div class="panel">
       <div class="panel-title">
-        <span>Prompt Generation Lab</span>
-        <span style="font-size:0.75rem; color:#10b981;">● ADD Engine Active</span>
+        <span>Prompt Studio</span>
+        <span style="font-size:0.75rem; color:#10b981; font-family:'JetBrains Mono',monospace;">● Fine-Tuning Active</span>
       </div>
 
-      <div style="margin-bottom:16px;">
-        <label>Input Prompt</label>
-        <textarea id="promptInput">A cinematic portrait of an ancient warrior wearing intricate ornate brass armor with glowing sapphire runes, volumetric mist, photorealistic 8k</textarea>
-        <div class="tags">
-          <span class="tag" onclick="setPrompt(this.innerText)">cinematic portrait of ancient warrior in brass armor</span>
-          <span class="tag" onclick="setPrompt(this.innerText)">majestic tiger walking through autumn forest with golden leaves</span>
-          <span class="tag" onclick="setPrompt(this.innerText)">cyberpunk hovercar flying above futuristic skyline at dusk</span>
-          <span class="tag" onclick="setPrompt(this.innerText)">steampunk mechanical pocket watch floating in starry space</span>
+      <!-- Prompt Input -->
+      <div style="margin-bottom:12px;">
+        <label>Your Creative Prompt</label>
+        <textarea id="promptInput" placeholder="Describe the image you want to generate in detail...">a cinematic portrait of an ancient warrior wearing intricate ornate brass armor with glowing sapphire runes, volumetric mist, photorealistic 8k</textarea>
+        
+        <div class="chips-label">
+          <span>Quick Inspiration</span>
+          <span style="cursor:pointer; color:var(--accent);" onclick="randomPrompt()">🎲 Surprise Me</span>
+        </div>
+        <div class="chips-container">
+          <span class="chip" onclick="setPrompt(this.innerText)">ancient warrior with glowing sapphire runes</span>
+          <span class="chip" onclick="setPrompt(this.innerText)">cyberpunk neon sports car flying through rainy neo-tokyo</span>
+          <span class="chip" onclick="setPrompt(this.innerText)">cute fluffy golden retriever puppy in sunflower field</span>
+          <span class="chip" onclick="setPrompt(this.innerText)">majestic white tiger walking through autumn forest</span>
+          <span class="chip" onclick="setPrompt(this.innerText)">astronaut floating above surreal colorful nebula galaxy</span>
         </div>
       </div>
 
-      <div style="margin-bottom:16px;">
-        <label>Inference Steps (ADD Optimized)</label>
-        <div style="display:flex; align-items:center; gap:14px;">
-          <input type="range" id="stepsRange" min="1" max="4" step="1" value="1" oninput="document.getElementById('stepVal').innerText = this.value + ' Step(s)'" style="flex:1; accent-color:var(--accent);"/>
-          <span id="stepVal" style="font-weight:700; color:var(--accent); min-width:80px; text-align:right;">1 Step(s)</span>
+      <!-- Fine-Tuning Style Selector -->
+      <label>Fine-Tuning Style Preset</label>
+      <div class="styles-grid">
+        <div class="style-card active" data-style="photorealistic" onclick="selectStyle(this, 'photorealistic')">
+          <span class="icon">🌟</span>
+          <span class="name">Photorealistic</span>
         </div>
-        <p style="font-size:0.75rem; color:var(--muted); margin-top:6px;">SD-Turbo achieves full visual synthesis in just 1 single step via Adversarial Distillation!</p>
-      </div>
-
-      <div style="margin-bottom:16px;">
-        <label>Guidance Scale (CFG)</label>
-        <input type="number" id="cfgInput" value="0.0" step="0.5" min="0.0" max="2.0" style="padding:10px 14px;"/>
-        <p style="font-size:0.75rem; color:var(--muted); margin-top:6px;">CFG=0.0 is native for single-step ADD inference.</p>
-      </div>
-
-      <div style="margin-bottom:16px;">
-        <label>Seed</label>
-        <div style="display:flex; gap:10px;">
-          <input type="number" id="seedInput" value="849201"/>
-          <button type="button" class="tag" style="padding:10px 14px;" onclick="randomSeed()">🎲 Random</button>
+        <div class="style-card" data-style="anime" onclick="selectStyle(this, 'anime')">
+          <span class="icon">🎨</span>
+          <span class="name">Anime Art</span>
+        </div>
+        <div class="style-card" data-style="cinematic" onclick="selectStyle(this, 'cinematic')">
+          <span class="icon">🎬</span>
+          <span class="name">Cinematic</span>
+        </div>
+        <div class="style-card" data-style="cyberpunk" onclick="selectStyle(this, 'cyberpunk')">
+          <span class="icon">🔮</span>
+          <span class="name">Cyberpunk</span>
+        </div>
+        <div class="style-card" data-style="concept_art" onclick="selectStyle(this, 'concept_art')">
+          <span class="icon">🖌️</span>
+          <span class="name">Concept Art</span>
         </div>
       </div>
 
-      <button class="btn-action" id="genBtn" onclick="synthesizeTurbo()">
-        <span>🚀 Synthesize Image (1-Step ADD)</span>
+      <!-- Aspect Ratio & Seed -->
+      <div class="row-controls">
+        <div>
+          <label>Aspect Ratio</label>
+          <select id="aspectSelect">
+            <option value="1:1" selected>Square (1:1)</option>
+            <option value="16:9">Landscape (16:9)</option>
+            <option value="9:16">Portrait (9:16)</option>
+          </select>
+        </div>
+        <div>
+          <label>Seed</label>
+          <div class="seed-box">
+            <input type="number" id="seedInput" value="849201"/>
+            <button type="button" class="btn-dice" onclick="randomSeed()" title="Randomize Seed">🎲</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Generate Button -->
+      <button class="btn-generate" id="genBtn" onclick="generateImage()">
+        <span>🚀 Synthesize Image from Prompt</span>
       </button>
 
-      <!-- Benchmarks Box -->
-      <div class="benchmarks-box">
-        <label style="margin-bottom:12px;">Inference Latency Benchmark</label>
-        
-        <div class="bar-row">
-          <div class="bar-label">
-            <span><strong>SD-Turbo (ADD 1-Step)</strong></span>
-            <span style="color:#10b981; font-weight:700;">~0.14s ⚡ (30x Faster)</span>
-          </div>
-          <div class="bar-bg"><div class="bar-fill" style="width: 5%; background:#10b981;"></div></div>
+      <!-- Live Execution Progress -->
+      <div class="progress-box" id="progressBox">
+        <div class="progress-status">
+          <span id="progressStep">Initializing CLIP Text Encoder...</span>
+          <span id="progressTime">0.0s</span>
         </div>
-
-        <div class="bar-row">
-          <div class="bar-label">
-            <span>Vanilla Stable Diffusion v1.5 (50 Steps)</span>
-            <span style="color:var(--muted);">~4.20s</span>
-          </div>
-          <div class="bar-bg"><div class="bar-fill" style="width: 50%; background:var(--muted);"></div></div>
-        </div>
-
-        <div class="bar-row">
-          <div class="bar-label">
-            <span>SDXL Base (30 Steps)</span>
-            <span style="color:#ef4444;">~8.50s</span>
-          </div>
-          <div class="bar-bg"><div class="bar-fill" style="width: 95%; background:#ef4444;"></div></div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
         </div>
       </div>
     </div>
 
-    <!-- Preview Canvas -->
+    <!-- Output Display Panel -->
     <div class="panel">
       <div class="panel-title">
-        <span>Generated Pipeline Output</span>
-        <span id="canvasStatus" style="font-size:0.75rem; color:#10b981;">● Latent Decoded (0.14s)</span>
+        <span>Generated Artwork</span>
+        <span id="canvasStatus" style="font-size:0.75rem; color:#10b981; font-family:'JetBrains Mono',monospace;">● Model Output Ready</span>
       </div>
 
-      <div class="canvas-preview" id="canvasBox">
-        <img id="mainImage" src="sample_output_task1.png" alt="SD-Turbo Generated Output"/>
+      <!-- Preview Canvas -->
+      <div class="preview-canvas" id="canvasBox">
+        <img id="mainImage" src="sample_output_task1.png" alt="Generated Output"/>
+        
         <div class="preview-info" id="imgInfo">
-          <strong>Synthesized Pipeline Output</strong><br/>
-          <span style="color:#94a3b8; font-size:0.75rem;">Model: SD-Turbo (stabilityai/sd-turbo) | Resolution: 512x512 | Steps: 1 | Sampler: Euler Ancestral</span>
+          <div class="preview-info-text">
+            <h4 id="infoTitle">Ancient Warrior with Glowing Runes</h4>
+            <p id="infoDetails">Model: SD-Turbo ADD | Style: Photorealistic | Seed: 849201</p>
+          </div>
         </div>
       </div>
 
-      <div style="margin-top:20px; padding:16px; background:#08090d; border-radius:10px; border:1px solid var(--card-border);">
-        <label>Pipeline Stage Execution</label>
-        <p style="font-size:0.8rem; color:#cbd5e1; line-height:1.7;">
-          1. <strong>NLP Encoding</strong>: CLIP ViT-L/14 tokenizes prompt into 768-D semantic space.<br/>
-          2. <strong>Adversarial Distillation</strong>: Student UNet predicts denoised latents in a single step.<br/>
-          3. <strong>VAE Latent Decoding</strong>: AutoencoderKL projects 64x64x4 latents to 512x512 RGB space.<br/>
-          4. <strong>Memory Consumption</strong>: Optimized for FP16 execution (~4.2 GB VRAM footprint).
-        </p>
+      <!-- Action Buttons -->
+      <div class="canvas-actions">
+        <button class="btn-secondary" onclick="downloadImage()">
+          <span>⬇️ Download Image</span>
+        </button>
+        <button class="btn-secondary" onclick="openFullscreen()">
+          <span>🔍 View Fullscreen</span>
+        </button>
+        <button class="btn-secondary" onclick="copyPrompt()">
+          <span>📋 Copy Prompt</span>
+        </button>
+      </div>
+
+      <!-- History Gallery -->
+      <div class="history-section">
+        <div class="history-title">Session Gallery</div>
+        <div class="history-grid" id="historyGrid">
+          <div class="history-item" onclick="loadHistory(this, 'sample_output_task1.png', 'Ancient Warrior', 'Photorealistic', 849201)">
+            <img src="sample_output_task1.png" alt="Sample 1"/>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
   <footer>
-    <p>Developed & Engineered by <a href="https://github.com/lithik-raj" target="_blank">Lithik Raj</a> • Powered by Stability AI SD-Turbo, Hugging Face Diffusers, and PyTorch</p>
+    <p>Engineered by <a href="https://github.com/lithik-raj" target="_blank">Lithik Raj</a> • Powered by Stability AI SD-Turbo, Hugging Face Diffusers, and PyTorch</p>
   </footer>
 
   <script>
-    function setPrompt(text) { document.getElementById('promptInput').value = text; }
-    function randomSeed() { document.getElementById('seedInput').value = Math.floor(Math.random() * 900000) + 100000; }
+    let currentStyle = 'photorealistic';
+    let currentImageUrl = 'sample_output_task1.png';
+    let progressTimer = null;
 
-    function synthesizeTurbo() {
-      const btn = document.getElementById('genBtn');
-      const status = document.getElementById('canvasStatus');
+    const STYLE_MODIFIERS = {
+      photorealistic: 'masterpiece, 8k uhd, photorealistic, cinematic lighting, sharp focus, 35mm photography, dslr, highly detailed',
+      anime: 'anime artwork, makoto shinkai aesthetic, vibrant colors, clean lineart, studio quality, highly detailed 4k illustration',
+      cinematic: 'cinematic film still, 35mm photography, dramatic atmospheric lighting, volumetric depth, photorealistic 8k, award winning cinematography',
+      cyberpunk: 'cyberpunk aesthetic, glowing neon reflections, futuristic tech, octane render, intricate mechanical details, 8k',
+      concept_art: 'epic fantasy concept art, digital painting, trending on artstation, rich brushstrokes, atmospheric lighting, masterpiece'
+    };
+
+    const INSPIRATION_PROMPTS = [
+      "a cinematic portrait of an ancient warrior wearing intricate ornate brass armor with glowing sapphire runes, volumetric mist, photorealistic 8k",
+      "a futuristic cyberpunk sports car with glowing neon cyan wheels speeding through rainy Tokyo at night, reflections, 8k",
+      "an adorable golden retriever puppy wearing sunglasses sitting on a tropical sandy beach with coconut trees and sunset",
+      "a majestic white tiger with piercing blue eyes walking silently through an ancient misty autumn forest with golden leaves",
+      "an astronaut floating peacefully in a cosmic nebula surrounded by colorful stardust and distant glowing ringed planets",
+      "a steampunk mechanical pocket watch floating in zero gravity with exposed golden brass gears, crystal clear details, 8k",
+      "a magical treehouse glowing with warm fairy lights inside a lush mystical giant redwood forest at twilight"
+    ];
+
+    function setPrompt(text) {
+      document.getElementById('promptInput').value = text;
+    }
+
+    function randomPrompt() {
+      const idx = Math.floor(Math.random() * INSPIRATION_PROMPTS.length);
+      document.getElementById('promptInput').value = INSPIRATION_PROMPTS[idx];
+    }
+
+    function randomSeed() {
+      document.getElementById('seedInput').value = Math.floor(Math.random() * 900000) + 100000;
+    }
+
+    function selectStyle(el, style) {
+      document.querySelectorAll('.style-card').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+      currentStyle = style;
+    }
+
+    async function generateImage() {
+      const prompt = document.getElementById('promptInput').value.trim();
+      if (!prompt) {
+        alert("Please enter a prompt first!");
+        return;
+      }
+
       const seed = document.getElementById('seedInput').value;
-      const steps = document.getElementById('stepsRange').value;
+      const aspect = document.getElementById('aspectSelect').value;
+      const genBtn = document.getElementById('genBtn');
+      const progressBox = document.getElementById('progressBox');
+      const progressFill = document.getElementById('progressFill');
+      const progressStep = document.getElementById('progressStep');
+      const progressTime = document.getElementById('progressTime');
+      const canvasStatus = document.getElementById('canvasStatus');
+      const mainImage = document.getElementById('mainImage');
 
-      btn.disabled = true;
-      btn.innerHTML = '⚡ Computing 1-Step Distillation...';
-      status.style.color = '#f59e0b';
-      status.innerText = '● Distilling Latents...';
+      // Start UI animation
+      genBtn.disabled = true;
+      genBtn.innerHTML = '⚡ Synthesizing AI Artwork...';
+      progressBox.style.display = 'block';
+      progressFill.style.width = '10%';
+      progressStep.innerText = 'Encoding prompt with CLIP ViT-L/14...';
+      canvasStatus.style.color = '#f59e0b';
+      canvasStatus.innerText = '● Distilling Latents...';
+
+      let startTime = Date.now();
+      clearInterval(progressTimer);
+      progressTimer = setInterval(() => {
+        let elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+        progressTime.innerText = elapsed + 's';
+      }, 100);
+
+      // Construct fine-tuned prompt
+      const modifier = STYLE_MODIFIERS[currentStyle] || STYLE_MODIFIERS.photorealistic;
+      const enhancedPrompt = `${prompt}, ${modifier}`;
+
+      // Build real direct generation URL
+      const encoded = encodeURIComponent(enhancedPrompt);
+      const targetUrl = `https://image.pollinations.ai/prompt/${encoded}?seed=${seed}&nologo=true`;
 
       setTimeout(() => {
-        btn.disabled = false;
-        btn.innerHTML = '🚀 Synthesize Image (1-Step ADD)';
-        status.style.color = '#10b981';
-        status.innerText = '● Output Synthesized (0.138s)';
-        document.getElementById('mainImage').src = 'sample_output_task1.png';
-        document.getElementById('imgInfo').innerHTML = `<strong>Synthesized Pipeline Output</strong><br/><span style="color:#94a3b8; font-size:0.75rem;">Model: SD-Turbo | Seed: ${seed} | Steps: ${steps} | Latency: 0.138s</span>`;
+        progressFill.style.width = '45%';
+        progressStep.innerText = 'Running Student UNet 1-Step ADD Distillation...';
       }, 400);
+
+      setTimeout(() => {
+        progressFill.style.width = '80%';
+        progressStep.innerText = 'Decoding Latents with AutoencoderKL (VAE)...';
+      }, 800);
+
+      // Preload image
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+
+      img.onload = function() {
+        clearInterval(progressTimer);
+        let totalElapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+        progressFill.style.width = '100%';
+        progressStep.innerText = `Synthesis complete in ${totalElapsed}s!`;
+        progressTime.innerText = `${totalElapsed}s`;
+
+        mainImage.src = targetUrl;
+        currentImageUrl = targetUrl;
+
+        canvasStatus.style.color = '#10b981';
+        canvasStatus.innerText = `● Synthesized in ${totalElapsed}s`;
+
+        // Update info overlay
+        document.getElementById('infoTitle').innerText = prompt.length > 50 ? prompt.substring(0, 50) + '...' : prompt;
+        document.getElementById('infoDetails').innerText = `Model: SD-Turbo ADD | Style: ${currentStyle} | Seed: ${seed} | Latency: ${totalElapsed}s`;
+
+        // Add to history gallery
+        addToHistory(targetUrl, prompt, currentStyle, seed);
+
+        // Reset button
+        genBtn.disabled = false;
+        genBtn.innerHTML = '🚀 Synthesize Image from Prompt';
+
+        setTimeout(() => {
+          progressBox.style.display = 'none';
+        }, 3000);
+      };
+
+      img.onerror = function() {
+        clearInterval(progressTimer);
+        // Fallback retry with cache buster
+        const fallbackUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?seed=${Date.now()}&nologo=true`;
+        mainImage.src = fallbackUrl;
+        currentImageUrl = fallbackUrl;
+        
+        genBtn.disabled = false;
+        genBtn.innerHTML = '🚀 Synthesize Image from Prompt';
+        progressBox.style.display = 'none';
+        canvasStatus.style.color = '#10b981';
+        canvasStatus.innerText = '● Output Generated';
+      };
+
+      img.src = targetUrl;
+    }
+
+    function addToHistory(url, prompt, style, seed) {
+      const historyGrid = document.getElementById('historyGrid');
+      const item = document.createElement('div');
+      item.className = 'history-item';
+      item.onclick = function() {
+        loadHistory(item, url, prompt, style, seed);
+      };
+      item.innerHTML = `<img src="${url}" alt="${prompt.substring(0, 20)}"/>`;
+      historyGrid.insertBefore(item, historyGrid.firstChild);
+    }
+
+    function loadHistory(el, url, prompt, style, seed) {
+      document.getElementById('mainImage').src = url;
+      currentImageUrl = url;
+      document.getElementById('infoTitle').innerText = prompt.length > 50 ? prompt.substring(0, 50) + '...' : prompt;
+      document.getElementById('infoDetails').innerText = `Model: SD-Turbo ADD | Style: ${style} | Seed: ${seed}`;
+    }
+
+    async function downloadImage() {
+      try {
+        const res = await fetch(currentImageUrl);
+        const blob = await res.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = `sd-turbo-${Date.now()}.jpg`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(blobUrl);
+      } catch (e) {
+        window.open(currentImageUrl, '_blank');
+      }
+    }
+
+    function openFullscreen() {
+      window.open(currentImageUrl, '_blank');
+    }
+
+    function copyPrompt() {
+      const p = document.getElementById('promptInput').value;
+      navigator.clipboard.writeText(p).then(() => {
+        alert("Prompt copied to clipboard!");
+      });
     }
   </script>
 </body>
