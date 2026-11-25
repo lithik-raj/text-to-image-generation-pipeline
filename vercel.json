@@ -3,14 +3,13 @@
   "builds": [
     {
       "src": "api/index.py",
-      "use": "@vercel/python"
+      "use": "@vercel/python",
+      "config": {
+        "includeFiles": ["sample_output_task1.png", "index.html", "api/**"]
+      }
     }
   ],
   "routes": [
-    {
-      "src": "/sample_output_task1.png",
-      "dest": "/sample_output_task1.png"
-    },
     {
       "src": "/(.*)",
       "dest": "api/index.py"

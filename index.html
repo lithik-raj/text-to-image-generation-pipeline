@@ -277,7 +277,7 @@
       </div>
 
       <div class="canvas-preview" id="canvasBox">
-        <img id="mainImage" src="sample_output_task1.png" onerror="this.onerror=null; this.src='https://upload.wikimedia.org/wikipedia/commons/2/2c/Samurai_Warrior_Armor_%2829746120290%29.jpg';" alt="SD-Turbo Generated Output"/>
+        <img id="mainImage" src="https://raw.githubusercontent.com/lithik-raj/text-to-image-generation-pipeline/main/sample_output_task1.png" onerror="this.onerror=null; this.src='/sample_output_task1.png';" alt="SD-Turbo Generated Output"/>
         <div class="preview-info" id="imgInfo">
           <strong>Synthesized Pipeline Output</strong><br/>
           <span style="color:#94a3b8; font-size:0.75rem;">Model: SD-Turbo (stabilityai/sd-turbo) | Resolution: 512x512 | Steps: 1 | Sampler: Euler Ancestral</span>
@@ -301,6 +301,8 @@
   </footer>
 
   <script>
+    const SAMPLE_IMAGE_SRC = 'https://raw.githubusercontent.com/lithik-raj/text-to-image-generation-pipeline/main/sample_output_task1.png';
+
     function setPrompt(text) { document.getElementById('promptInput').value = text; }
     function randomSeed() { document.getElementById('seedInput').value = Math.floor(Math.random() * 900000) + 100000; }
 
@@ -320,7 +322,7 @@
         btn.innerHTML = '🚀 Synthesize Image (1-Step ADD)';
         status.style.color = '#10b981';
         status.innerText = '● Output Synthesized (0.138s)';
-        document.getElementById('mainImage').src = 'sample_output_task1.png';
+        document.getElementById('mainImage').src = SAMPLE_IMAGE_SRC;
         document.getElementById('imgInfo').innerHTML = `<strong>Synthesized Pipeline Output</strong><br/><span style="color:#94a3b8; font-size:0.75rem;">Model: SD-Turbo | Seed: ${seed} | Steps: ${steps} | Latency: 0.138s</span>`;
       }, 400);
     }

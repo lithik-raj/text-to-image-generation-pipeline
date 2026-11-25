@@ -1,6 +1,6 @@
 import os
 import sys
-from flask import Flask, send_from_directory, jsonify, request
+from flask import Flask, send_from_directory, jsonify, request, redirect
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -12,7 +12,15 @@ def index():
 
 @app.route("/sample_output_task1.png")
 def sample_image():
-    return send_from_directory(BASE_DIR, "sample_output_task1.png")
+    for p in [
+        os.path.join(BASE_DIR, "sample_output_task1.png"),
+        os.path.join(BASE_DIR, "api", "sample_output_task1.png"),
+        os.path.join(os.path.dirname(__file__), "sample_output_task1.png"),
+        os.path.join(os.path.dirname(__file__), "api", "sample_output_task1.png")
+    ]:
+        if os.path.exists(p):
+            return send_from_directory(os.path.dirname(p), os.path.basename(p))
+    return redirect("https://raw.githubusercontent.com/lithik-raj/text-to-image-generation-pipeline/main/sample_output_task1.png")
 
 @app.route("/health")
 def health():
