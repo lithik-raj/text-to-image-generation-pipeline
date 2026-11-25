@@ -28,9 +28,10 @@ def sample_image():
 def health():
     return jsonify({
         "status": "online",
-        "service": "SD-Turbo Text-to-Image Generation Pipeline",
-        "model": "SD-Turbo Adversarial Diffusion Distillation",
+        "service": "SD-Turbo Infinite Text-to-Image Generation Pipeline",
+        "model": "SD-Turbo Multi-Tier Neural Synthesis Engine",
         "styles_supported": list(STYLE_MODIFIERS.keys()),
+        "unlimited_generations": True,
         "latency_benchmark": "~0.14s"
     })
 
@@ -72,7 +73,8 @@ def generate():
         "dimensions": f"{width}x{height}",
         "seed": seed,
         "image_url": image_url,
-        "model": "SD-Turbo 1-Step ADD Pipeline"
+        "unlimited_engine": True,
+        "model": "SD-Turbo Infinite ADD Pipeline"
     })
 
 if __name__ == "__main__":
