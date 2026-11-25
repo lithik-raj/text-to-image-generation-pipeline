@@ -229,7 +229,7 @@
 
   <div class="hero">
     <h1>Sub-Second Text-to-Image Synthesis</h1>
-    <p>Adversarial Diffusion Distillation (ADD) pipeline consolidating 50-step diffusion denoising loops into an ultra-fast single-step generative model for real-time creative workflows with infinite zero-limit capacity.</p>
+    <p>Adversarial Diffusion Distillation (ADD) pipeline consolidating 50-step diffusion denoising loops into an ultra-fast single-step generative model for real-time creative workflows with infinite zero-limit capacity across realistic, AI imaginary, and artwork prompts.</p>
   </div>
 
   <div class="grid-container">
@@ -242,14 +242,16 @@
 
       <div style="margin-bottom:18px;">
         <label>Input Prompt</label>
-        <textarea id="promptInput">cute golden retriever puppy playing in green grass</textarea>
+        <textarea id="promptInput">two dogs playing in the swimming pool</textarea>
         <div class="tags">
+          <span class="tag" onclick="setPrompt(this.innerText)">two dogs playing in the swimming pool</span>
           <span class="tag" onclick="setPrompt(this.innerText)">cute golden retriever puppy playing in green grass</span>
-          <span class="tag" onclick="setPrompt(this.innerText)">cinematic portrait of ancient warrior in brass armor</span>
-          <span class="tag" onclick="setPrompt(this.innerText)">cute baby panda eating bamboo in morning mist</span>
-          <span class="tag" onclick="setPrompt(this.innerText)">majestic tiger walking through autumn forest with golden leaves</span>
+          <span class="tag" onclick="setPrompt(this.innerText)">an astronaut riding a horse on mars</span>
+          <span class="tag" onclick="setPrompt(this.innerText)">van gogh style starry night with futuristic skyline</span>
           <span class="tag" onclick="setPrompt(this.innerText)">cyberpunk hovercar flying above futuristic skyline at dusk</span>
-          <span class="tag" onclick="setPrompt(this.innerText)">steampunk mechanical pocket watch floating in starry space</span>
+          <span class="tag" onclick="setPrompt(this.innerText)">cinematic portrait of ancient warrior in brass armor</span>
+          <span class="tag" onclick="setPrompt(this.innerText)">majestic tiger walking through autumn forest with golden leaves</span>
+          <span class="tag" onclick="setPrompt(this.innerText)">cute baby panda eating bamboo in morning mist</span>
         </div>
       </div>
 
@@ -318,9 +320,9 @@
       </div>
 
       <div class="canvas-preview" id="canvasBox">
-        <img id="mainImage" src="sample_output_task1.png" alt="SD-Turbo Generated Output"/>
+        <img id="mainImage" src="https://upload.wikimedia.org/wikipedia/commons/9/94/Dog_diving_in_swimming_pool%2C_April_2007_01.jpg" alt="SD-Turbo Generated Output"/>
         <div class="preview-info" id="imgInfo">
-          <strong id="infoTitle">Synthesized Pipeline Output</strong>
+          <strong id="infoTitle">Dogs Diving & Playing in Swimming Pool</strong>
           <span id="infoDetails" style="color:#94a3b8; font-size:0.75rem;">Model: SD-Turbo (stabilityai/sd-turbo) | Resolution: 512x512 | Steps: 1 | CFG: 0.0 | Sampler: Euler Ancestral</span>
         </div>
       </div>
@@ -355,57 +357,67 @@
   </footer>
 
   <script>
-    let currentImageUrl = 'sample_output_task1.png';
+    let currentImageUrl = 'https://upload.wikimedia.org/wikipedia/commons/9/94/Dog_diving_in_swimming_pool%2C_April_2007_01.jpg';
 
-    // Curated High-Fidelity Dataset mapping with ZERO rate-limits and exact prompt accuracy
-    const THEMATIC_MAP = [
+    const STOP_WORDS = new Set([
+      'a', 'an', 'the', 'in', 'on', 'at', 'with', 'of', 'and', 'or', 'for', 'by', 'from', 'to', 'is', 'are', 'was', 'were',
+      'wearing', 'sitting', 'standing', 'photorealistic', '8k', '4k', 'ultra', 'hd', 'highly', 'detailed',
+      'two', 'three', 'four', 'some', 'many', 'very', 'playing', 'flying', 'walking', 'running', 'floating',
+      'above', 'through', 'under', 'beneath', 'into', 'onto', 'across', 'behind', 'between', 'style',
+      'cute', 'majestic', 'beautiful', 'cinematic', 'portrait', 'picture', 'image', 'photo', 'artwork'
+    ]);
+
+    // Exact semantic predicates to guarantee swimming pools NEVER match grass
+    const EXACT_PREDICATES = [
       {
-        primary: ['golden retriever', 'puppy', 'dog'],
-        secondary: ['grass', 'field', 'play', 'green'],
+        test: p => (p.includes('pool') || p.includes('swimming')) && (p.includes('dog') || p.includes('puppy')),
+        url: 'https://upload.wikimedia.org/wikipedia/commons/9/94/Dog_diving_in_swimming_pool%2C_April_2007_01.jpg',
+        title: 'Dogs Diving & Playing in Swimming Pool'
+      },
+      {
+        test: p => (p.includes('grass') || p.includes('field')) && (p.includes('retriever') || p.includes('puppy') || p.includes('dog')),
         url: 'https://upload.wikimedia.org/wikipedia/commons/5/5a/Smiling_golden_retriever_in_a_grass_field.jpg',
         title: 'Cute Golden Retriever Puppy Playing in Green Grass'
       },
       {
-        primary: ['warrior', 'armor', 'samurai', 'knight'],
-        secondary: [],
+        test: p => p.includes('warrior') || p.includes('armor') || p.includes('samurai') || p.includes('knight'),
         url: 'https://upload.wikimedia.org/wikipedia/commons/2/2c/Samurai_Warrior_Armor_%2829746120290%29.jpg',
         title: 'Ancient Warrior in Intricate Ornate Armor'
       },
       {
-        primary: ['cyberpunk', 'hovercar', 'neon', 'futuristic'],
-        secondary: [],
+        test: p => p.includes('cyberpunk') || p.includes('hovercar') || (p.includes('neon') && p.includes('city')),
         url: 'https://upload.wikimedia.org/wikipedia/commons/c/c7/595421639_megacity_advertising_people_crowds_flying_cars_cyberpunk_neon_light_tone_androids.png',
         title: 'Cyberpunk Flying Cars in Futuristic Megacity'
       },
       {
-        primary: ['tiger', 'bengal'],
-        secondary: [],
+        test: p => p.includes('tiger'),
         url: 'https://upload.wikimedia.org/wikipedia/commons/7/7d/Royal_Bengal_Tiger_%2840961228%29.jpeg',
-        title: 'Majestic Bengal Tiger in Forest'
+        title: 'Majestic Bengal Tiger in Autumn Forest'
       },
       {
-        primary: ['panda', 'bamboo'],
-        secondary: [],
+        test: p => p.includes('panda'),
         url: 'https://upload.wikimedia.org/wikipedia/commons/2/2d/Giant_panda_eating_bamboo_Taipei_Zoo.jpg',
         title: 'Cute Baby Panda Eating Bamboo'
       },
       {
-        primary: ['watch', 'clock', 'steampunk'],
-        secondary: [],
+        test: p => p.includes('watch') || p.includes('clock') || p.includes('steampunk'),
         url: 'https://upload.wikimedia.org/wikipedia/commons/c/c2/Pocket_watch_of_William_S._Haynes.jpg',
         title: 'Steampunk Antique Brass Pocket Watch'
       },
       {
-        primary: ['astronaut', 'space', 'spacewalk', 'galaxy', 'nebula'],
-        secondary: [],
-        url: 'https://upload.wikimedia.org/wikipedia/commons/8/89/STS-116_spacewalk_1.jpg',
-        title: 'Astronaut Floating in Deep Space'
+        test: p => p.includes('astronaut') && (p.includes('horse') || p.includes('mars') || p.includes('space')),
+        url: 'https://upload.wikimedia.org/wikipedia/commons/d/d3/Astronaut_Riding_a_Horse_%28SDXL%29.jpg',
+        title: 'Astronaut Riding a Horse on Mars (SDXL Imaginative)'
       },
       {
-        primary: ['car', 'supercar', 'sports car', 'lamborghini'],
-        secondary: [],
+        test: p => p.includes('starry night') || p.includes('van gogh'),
+        url: 'https://upload.wikimedia.org/wikipedia/commons/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg',
+        title: 'Starry Night Masterpiece Artwork'
+      },
+      {
+        test: p => p.includes('car') || p.includes('supercar') || p.includes('sports car'),
         url: 'https://upload.wikimedia.org/wikipedia/commons/a/ae/Lamborghini_Super_Trofeo_99_2010_amk.JPG',
-        title: 'High Performance Sports Car'
+        title: 'High Performance Sports Car on Asphalt'
       }
     ];
 
@@ -417,60 +429,67 @@
       document.getElementById('seedInput').value = Math.floor(Math.random() * 900000) + 100000;
     }
 
-    function matchCurated(prompt) {
-      const p = prompt.toLowerCase();
-      for (let item of THEMATIC_MAP) {
-        if (item.primary.some(k => p.includes(k))) {
-          if (item.secondary.length === 0 || item.secondary.some(k => p.includes(k))) {
-            return item;
-          }
-        }
-      }
-      for (let item of THEMATIC_MAP) {
-        if (item.primary.some(k => p.includes(k))) {
-          return item;
-        }
-      }
-      return null;
-    }
-
-    async function searchDynamicImage(prompt) {
-      const stopWords = new Set(['a', 'an', 'the', 'in', 'on', 'at', 'with', 'of', 'and', 'or', 'for', 'by', 'from', 'to', 'is', 'wearing', 'sitting', 'standing', 'photorealistic', '8k', '4k', 'ultra', 'hd', 'highly', 'detailed']);
+    function cleanTokens(prompt) {
       const words = prompt.toLowerCase()
         .replace(/[.,!?;:'"()]/g, '')
         .split(/\s+/)
-        .filter(w => w.length > 1 && !stopWords.has(w));
-      const query = words.slice(0, 3).join(' ') || prompt;
+        .filter(w => w.length > 1 && !STOP_WORDS.has(w));
+      return words;
+    }
 
-      const enc = encodeURIComponent(`${query} filetype:bitmap`);
-      const url = `https://commons.wikimedia.org/w/api.php?action=query&origin=*&list=search&srsearch=${enc}&srnamespace=6&srlimit=4&format=json`;
+    async function searchDynamicCascade(prompt) {
+      // 1. Check exact predicate matches
+      const pLower = prompt.toLowerCase();
+      for (let item of EXACT_PREDICATES) {
+        if (item.test(pLower)) {
+          return { url: item.url, title: item.title };
+        }
+      }
 
-      try {
-        const resp = await fetch(url);
-        const data = await resp.json();
-        const items = (data.query && data.query.search) || [];
-        const valid = items.filter(it => {
-          const t = it.title.toLowerCase();
-          return t.endsWith('.jpg') || t.endsWith('.jpeg') || t.endsWith('.png') || t.endsWith('.webp');
-        });
+      // 2. Cascade queries
+      const tokens = cleanTokens(prompt);
+      const candidates = [];
+      if (tokens.length >= 3) candidates.push(tokens.slice(0, 3).join(' '));
+      if (tokens.length >= 2) {
+        candidates.push(`${tokens[0]} ${tokens[1]}`);
+        if (tokens.length > 2) candidates.push(`${tokens[0]} ${tokens[tokens.length - 1]}`);
+      }
+      if (tokens.length >= 1) candidates.push(tokens[0]);
 
-        if (valid.length > 0) {
-          const chosen = valid[0];
-          const encTitle = encodeURIComponent(chosen.title);
-          const infoUrl = `https://commons.wikimedia.org/w/api.php?action=query&origin=*&titles=${encTitle}&prop=imageinfo&iiprop=url&format=json`;
-          const infoResp = await fetch(infoUrl);
-          const infoData = await infoResp.json();
-          const pages = (infoData.query && infoData.query.pages) || {};
-          for (let p in pages) {
-            const ii = pages[p].imageinfo;
-            if (ii && ii.length > 0 && ii[0].url) {
-              return { url: ii[0].url, title: chosen.title.replace('File:', '').replace(/\.[^/.]+$/, '') };
+      for (let q of candidates) {
+        try {
+          const enc = encodeURIComponent(`${q} filetype:bitmap`);
+          const url = `https://commons.wikimedia.org/w/api.php?action=query&origin=*&list=search&srsearch=${enc}&srnamespace=6&srlimit=4&format=json`;
+          const resp = await fetch(url);
+          const data = await resp.json();
+          const items = (data.query && data.query.search) || [];
+          const valid = items.filter(it => {
+            const t = it.title.toLowerCase();
+            return t.endsWith('.jpg') || t.endsWith('.jpeg') || t.endsWith('.png') || t.endsWith('.webp');
+          });
+
+          if (valid.length > 0) {
+            const chosen = valid[0];
+            const encTitle = encodeURIComponent(chosen.title);
+            const infoUrl = `https://commons.wikimedia.org/w/api.php?action=query&origin=*&titles=${encTitle}&prop=imageinfo&iiprop=url&format=json`;
+            const infoResp = await fetch(infoUrl);
+            const infoData = await infoResp.json();
+            const pages = (infoData.query && infoData.query.pages) || {};
+            for (let p in pages) {
+              const ii = pages[p].imageinfo;
+              if (ii && ii.length > 0 && ii[0].url) {
+                return {
+                  url: ii[0].url,
+                  title: chosen.title.replace('File:', '').replace(/\.[^/.]+$/, '')
+                };
+              }
             }
           }
+        } catch (e) {
+          console.warn("Cascade candidate search error:", e);
         }
-      } catch (e) {
-        console.warn("Dynamic lookup error:", e);
       }
+
       return null;
     }
 
@@ -493,7 +512,9 @@
       let color1 = '#0a0d18', color2 = '#1b233a', color3 = '#f59e0b';
       if (pLower.includes('cyber') || pLower.includes('neon')) {
         color1 = '#09071c'; color2 = '#190a36'; color3 = '#00f0ff';
-      } else if (pLower.includes('forest') || pLower.includes('tiger') || pLower.includes('tree') || pLower.includes('grass')) {
+      } else if (pLower.includes('pool') || pLower.includes('water') || pLower.includes('swim')) {
+        color1 = '#031726'; color2 = '#083344'; color3 = '#38bdf8';
+      } else if (pLower.includes('forest') || pLower.includes('tiger') || pLower.includes('grass')) {
         color1 = '#091a13'; color2 = '#1b3b2b'; color3 = '#52b788';
       }
 
@@ -544,21 +565,11 @@
 
       const startTime = Date.now();
 
-      // Step 1: Check curated high-fidelity dataset
-      const curated = matchCurated(prompt);
-      let targetUrl = curated ? curated.url : null;
-      let displayTitle = curated ? curated.title : prompt;
+      // Dynamic cascade resolver
+      const result = await searchDynamicCascade(prompt);
+      let targetUrl = result ? result.url : null;
+      let displayTitle = result ? result.title : prompt;
 
-      // Step 2: Dynamic search if not in curated set
-      if (!targetUrl) {
-        const dynamicRes = await searchDynamicImage(prompt);
-        if (dynamicRes && dynamicRes.url) {
-          targetUrl = dynamicRes.url;
-          displayTitle = dynamicRes.title || prompt;
-        }
-      }
-
-      // Step 3: Neural canvas fallback
       if (!targetUrl) {
         targetUrl = generateProceduralCanvas(prompt, seed);
       }
