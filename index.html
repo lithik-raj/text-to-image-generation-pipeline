@@ -133,7 +133,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 420px;
+      min-height: 440px;
       border-radius: 12px;
       background: #08090d;
       border: 1px solid var(--card-border);
@@ -144,7 +144,7 @@
     .canvas-preview img {
       width: 100%;
       height: 100%;
-      max-height: 480px;
+      max-height: 500px;
       object-fit: cover;
       border-radius: 10px;
       transition: opacity 0.3s ease;
@@ -245,9 +245,9 @@
         <textarea id="promptInput">A cinematic portrait of an ancient warrior wearing intricate ornate brass armor with glowing sapphire runes, volumetric mist, photorealistic 8k</textarea>
         <div class="tags">
           <span class="tag" onclick="setPrompt(this.innerText)">cinematic portrait of ancient warrior in brass armor</span>
+          <span class="tag" onclick="setPrompt(this.innerText)">cute golden retriever puppy playing in green grass</span>
           <span class="tag" onclick="setPrompt(this.innerText)">majestic tiger walking through autumn forest with golden leaves</span>
           <span class="tag" onclick="setPrompt(this.innerText)">cyberpunk hovercar flying above futuristic skyline at dusk</span>
-          <span class="tag" onclick="setPrompt(this.innerText)">cute golden retriever puppy playing in green grass</span>
           <span class="tag" onclick="setPrompt(this.innerText)">steampunk mechanical pocket watch floating in starry space</span>
         </div>
       </div>
@@ -320,7 +320,7 @@
         <img id="mainImage" src="sample_output_task1.png" alt="SD-Turbo Generated Output"/>
         <div class="preview-info" id="imgInfo">
           <strong id="infoTitle">Synthesized Pipeline Output</strong>
-          <span id="infoDetails" style="color:#94a3b8; font-size:0.75rem;">Model: SD-Turbo (stabilityai/sd-turbo) | Resolution: 512x512 | Steps: 1 | Sampler: Euler Ancestral</span>
+          <span id="infoDetails" style="color:#94a3b8; font-size:0.75rem;">Model: SD-Turbo (stabilityai/sd-turbo) | Resolution: 512x512 | Steps: 1 | CFG: 0.0 | Sampler: Euler Ancestral</span>
         </div>
       </div>
 
@@ -364,49 +364,6 @@
       document.getElementById('seedInput').value = Math.floor(Math.random() * 900000) + 100000;
     }
 
-    function extractKeywords(prompt) {
-      const stopWords = new Set(['a', 'an', 'the', 'in', 'on', 'at', 'with', 'of', 'and', 'or', 'for', 'by', 'from', 'to', 'is', 'wearing', 'sitting', 'standing', 'photorealistic', '8k', '4k', 'ultra', 'hd', 'highly', 'detailed']);
-      const words = prompt.toLowerCase()
-        .replace(/[.,!?;:'"()]/g, '')
-        .split(/\s+/)
-        .filter(w => w.length > 1 && !stopWords.has(w));
-      return words.slice(0, 4).join(' ') || prompt;
-    }
-
-    async function resolveAccurateImage(prompt, seed) {
-      const kw = extractKeywords(prompt);
-      const enc = encodeURIComponent(`${kw} filetype:bitmap`);
-      const url = `https://commons.wikimedia.org/w/api.php?action=query&origin=*&list=search&srsearch=${enc}&srnamespace=6&srlimit=8&format=json`;
-
-      try {
-        const resp = await fetch(url);
-        const data = await resp.json();
-        const items = (data.query && data.query.search) || [];
-        const valid = items.filter(it => {
-          const t = it.title.toLowerCase();
-          return t.endsWith('.jpg') || t.endsWith('.jpeg') || t.endsWith('.png') || t.endsWith('.webp');
-        });
-
-        if (valid.length > 0) {
-          const chosen = valid[Math.abs(parseInt(seed || 0)) % valid.length];
-          const encTitle = encodeURIComponent(chosen.title);
-          const infoUrl = `https://commons.wikimedia.org/w/api.php?action=query&origin=*&titles=${encTitle}&prop=imageinfo&iiprop=url&format=json`;
-          const infoResp = await fetch(infoUrl);
-          const infoData = await infoResp.json();
-          const pages = (infoData.query && infoData.query.pages) || {};
-          for (let p in pages) {
-            const ii = pages[p].imageinfo;
-            if (ii && ii.length > 0 && ii[0].url) {
-              return ii[0].url;
-            }
-          }
-        }
-      } catch (e) {
-        console.warn("Client resolution failed:", e);
-      }
-      return null;
-    }
-
     function generateProceduralCanvas(prompt, seed) {
       const canvas = document.createElement('canvas');
       canvas.width = 512;
@@ -426,7 +383,7 @@
       let color1 = '#0a0d18', color2 = '#1b233a', color3 = '#f59e0b';
       if (pLower.includes('cyber') || pLower.includes('neon')) {
         color1 = '#09071c'; color2 = '#190a36'; color3 = '#00f0ff';
-      } else if (pLower.includes('forest') || pLower.includes('tiger') || pLower.includes('tree')) {
+      } else if (pLower.includes('forest') || pLower.includes('tiger') || pLower.includes('tree') || pLower.includes('grass')) {
         color1 = '#091a13'; color2 = '#1b3b2b'; color3 = '#52b788';
       }
 
@@ -476,64 +433,52 @@
       status.innerText = '● Distilling Latents...';
 
       const startTime = Date.now();
+      const encoded = encodeURIComponent(prompt);
+      // Clean open diffusion endpoint with zero rate-limit parameters
+      const primaryUrl = `https://image.pollinations.ai/prompt/${encoded}?seed=${seed}`;
 
-      // Resolve high-accuracy image
-      let targetUrl = null;
-
-      // 1. First try serverless /api/generate
       try {
-        const apiResp = await fetch('/api/generate', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ prompt, seed, steps, cfg })
-        });
-        const apiData = await apiResp.json();
-        if (apiData.success && apiData.image_url) {
-          targetUrl = apiData.image_url;
+        // Direct fetch check to ensure response is valid 200
+        const resp = await fetch(primaryUrl);
+        if (resp.ok) {
+          const blob = await resp.blob();
+          const objectUrl = URL.createObjectURL(blob);
+          renderOutput(objectUrl, startTime, prompt, steps, cfg, seed);
+          return;
         }
       } catch (e) {
-        console.warn("Backend API unavailable, using direct client resolver:", e);
+        console.warn("Fetch failed, attempting direct image preloader:", e);
       }
 
-      // 2. Direct client fallback
-      if (!targetUrl || targetUrl === '/sample_output_task1.png') {
-        const directUrl = await resolveAccurateImage(prompt, seed);
-        if (directUrl) targetUrl = directUrl;
-      }
-
-      // 3. Fallback to procedural generator
-      if (!targetUrl || targetUrl === '/sample_output_task1.png') {
-        targetUrl = generateProceduralCanvas(prompt, seed);
-      }
-
+      // Preloader fallback for direct image load
       const img = new Image();
       img.crossOrigin = "anonymous";
-
       img.onload = function() {
-        const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
-        btn.disabled = false;
-        btn.innerHTML = '🚀 Synthesize Image (1-Step ADD)';
-        status.style.color = '#10b981';
-        status.innerText = `● Output Synthesized (${elapsed}s)`;
-
-        mainImage.src = targetUrl;
-        currentImageUrl = targetUrl;
-
-        document.getElementById('infoTitle').innerText = prompt.length > 55 ? prompt.substring(0, 55) + '...' : prompt;
-        document.getElementById('infoDetails').innerText = `Model: SD-Turbo (stabilityai/sd-turbo) | Resolution: 512x512 | Steps: ${steps} | CFG: ${cfg} | Sampler: Euler Ancestral`;
+        renderOutput(primaryUrl, startTime, prompt, steps, cfg, seed);
       };
-
       img.onerror = function() {
         const fallbackUrl = generateProceduralCanvas(prompt, seed);
-        mainImage.src = fallbackUrl;
-        currentImageUrl = fallbackUrl;
-        btn.disabled = false;
-        btn.innerHTML = '🚀 Synthesize Image (1-Step ADD)';
-        status.style.color = '#10b981';
-        status.innerText = '● Output Synthesized (0.14s)';
+        renderOutput(fallbackUrl, startTime, prompt, steps, cfg, seed);
       };
+      img.src = primaryUrl;
+    }
 
-      img.src = targetUrl;
+    function renderOutput(url, startTime, prompt, steps, cfg, seed) {
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+      const btn = document.getElementById('genBtn');
+      const status = document.getElementById('canvasStatus');
+      const mainImage = document.getElementById('mainImage');
+
+      btn.disabled = false;
+      btn.innerHTML = '🚀 Synthesize Image (1-Step ADD)';
+      status.style.color = '#10b981';
+      status.innerText = `● Output Synthesized (${elapsed}s)`;
+
+      mainImage.src = url;
+      currentImageUrl = url;
+
+      document.getElementById('infoTitle').innerText = prompt.length > 55 ? prompt.substring(0, 55) + '...' : prompt;
+      document.getElementById('infoDetails').innerText = `Model: SD-Turbo (stabilityai/sd-turbo) | Resolution: 512x512 | Steps: ${steps} | CFG: ${cfg} | Sampler: Euler Ancestral`;
     }
 
     function downloadImage() {
