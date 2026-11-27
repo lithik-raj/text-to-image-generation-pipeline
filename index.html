@@ -24,12 +24,10 @@
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; }
     body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 24px 20px 40px; }
 
-    .container { max-width: 1200px; margin: 0 auto; }
+    .container { max-width: 1220px; margin: 0 auto; }
 
     /* Header */
-    .header-bar {
-      margin-bottom: 24px;
-    }
+    .header-bar { margin-bottom: 22px; }
     .header-title {
       font-size: 1.85rem;
       font-weight: 700;
@@ -88,19 +86,19 @@
       outline: none;
       transition: border-color 0.15s, box-shadow 0.15s;
     }
-    textarea:focus, input[type="number"]:focus {
+    textarea:focus, input[type="number"]:focus, select:focus {
       border-color: var(--border-focus);
       box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
     }
-    textarea { min-height: 75px; resize: vertical; line-height: 1.5; }
+    textarea { min-height: 76px; resize: vertical; line-height: 1.5; }
 
     /* Suggestion Chips */
-    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; margin-bottom: 16px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; margin-bottom: 14px; }
     .chip {
       background: #f1f5f9;
       border: 1px solid #cbd5e1;
       border-radius: 6px;
-      padding: 3px 9px;
+      padding: 4px 9px;
       font-size: 0.73rem;
       color: #334155;
       cursor: pointer;
@@ -112,12 +110,15 @@
       border-color: var(--badge-text);
     }
 
-    /* Slider Row */
+    /* Slider & Control Rows */
     .sliders-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 14px;
       margin-bottom: 14px;
+    }
+    @media (max-width: 520px) {
+      .sliders-row { grid-template-columns: 1fr; }
     }
     .slider-box {
       background: #f8fafc;
@@ -142,19 +143,13 @@
       cursor: pointer;
     }
 
-    /* Seed Row */
-    .seed-box {
-      margin-bottom: 16px;
-    }
-    .seed-row {
-      display: flex;
-      gap: 10px;
-    }
+    .seed-box { margin-bottom: 16px; }
+    .seed-row { display: flex; gap: 10px; }
     .btn-dice {
       background: #f1f5f9;
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 0 16px;
+      padding: 0 14px;
       font-size: 0.85rem;
       font-weight: 600;
       color: #475569;
@@ -162,6 +157,7 @@
       display: flex;
       align-items: center;
       gap: 6px;
+      white-space: nowrap;
       transition: background 0.15s;
     }
     .btn-dice:hover { background: #e2e8f0; }
@@ -192,10 +188,12 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
       margin-bottom: 12px;
     }
     .status-tag {
-      font-size: 0.75rem;
+      font-size: 0.76rem;
       color: #10b981;
       font-weight: 600;
     }
@@ -203,7 +201,7 @@
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 10px;
-      min-height: 220px;
+      min-height: 240px;
     }
     @media (max-width: 600px) {
       .output-gallery { grid-template-columns: repeat(2, 1fr); }
@@ -229,11 +227,46 @@
       object-fit: cover;
       display: block;
     }
+    .model-pill {
+      position: absolute;
+      bottom: 6px;
+      left: 6px;
+      background: rgba(15, 23, 42, 0.72);
+      color: #f8fafc;
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      opacity: 0;
+      transition: opacity 0.15s;
+      pointer-events: none;
+    }
+    .gallery-item:hover .model-pill { opacity: 1; }
+
+    /* Skeleton Loader */
+    .skeleton-slot {
+      aspect-ratio: 1;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: linear-gradient(110deg, #eef2ff 8%, #e0e7ff 18%, #eef2ff 33%);
+      background-size: 200% 100%;
+      animation: shimmer 1.3s linear infinite;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--badge-text);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-align: center;
+      padding: 10px;
+    }
+    @keyframes shimmer {
+      to { background-position-x: -200%; }
+    }
 
     /* History Section */
-    .history-card {
-      margin-top: 20px;
-    }
+    .history-card { margin-top: 20px; }
     .history-title {
       font-size: 1.15rem;
       font-weight: 700;
@@ -271,7 +304,7 @@
       bottom: 0;
       left: 0;
       right: 0;
-      background: rgba(15, 23, 42, 0.75);
+      background: rgba(15, 23, 42, 0.78);
       color: #fff;
       font-size: 0.65rem;
       padding: 3px 6px;
@@ -280,7 +313,7 @@
       text-overflow: ellipsis;
     }
 
-    /* Modal for Image Preview */
+    /* Modal Preview */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -299,6 +332,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      gap: 10px;
     }
     .modal-content img {
       max-width: 100%;
@@ -311,9 +345,14 @@
       top: -36px;
       right: 0;
       color: #fff;
-      font-size: 1.5rem;
+      font-size: 1.6rem;
       cursor: pointer;
       font-weight: 700;
+    }
+    .modal-caption {
+      color: #e2e8f0;
+      font-size: 0.85rem;
+      text-align: center;
     }
 
     footer {
@@ -333,23 +372,23 @@
     <!-- Header -->
     <div class="header-bar">
       <h1 class="header-title">🎨 Text-to-Image Generator (Pretrained SD-Turbo)</h1>
-      <p class="header-desc">Type any prompt — generates real, high-quality images in seconds. No training required.</p>
+      <p class="header-desc">Type any prompt — synthesizes both realistic photography and AI imaginary digital artwork via real-time diffusion models.</p>
     </div>
 
     <!-- Main Generation Interface -->
     <div class="main-grid">
-      <!-- Input Controls (scale 3) -->
+      <!-- Input Controls -->
       <div class="card">
         <label class="badge">Text Prompt</label>
-        <textarea id="promptBox" placeholder="A golden retriever playing on a sunny beach…">a dog playing with a ball at beach</textarea>
-        
+        <textarea id="promptBox" placeholder="Describe a photorealistic scene or imaginative AI artwork…">a dog playing with a ball at beach</textarea>
+
         <div class="chips">
-          <span class="chip" onclick="setPrompt(this.innerText)">a dog playing with a ball at beach</span>
-          <span class="chip" onclick="setPrompt(this.innerText)">two dogs playing in the swimming pool</span>
-          <span class="chip" onclick="setPrompt(this.innerText)">Two dogs playing on green grass, photorealistic</span>
-          <span class="chip" onclick="setPrompt(this.innerText)">A fresh pizza on a wooden table, food photography</span>
-          <span class="chip" onclick="setPrompt(this.innerText)">A red sports car speeding on a mountain road</span>
-          <span class="chip" onclick="setPrompt(this.innerText)">A fluffy cat sitting on a cozy sofa</span>
+          <span class="chip" onclick="setPrompt('a dog playing with a ball at beach', 'realistic')">a dog playing with a ball at beach</span>
+          <span class="chip" onclick="setPrompt('two dogs playing in the swimming pool', 'realistic')">two dogs playing in the swimming pool</span>
+          <span class="chip" onclick="setPrompt('A fresh pizza on a wooden table, food photography', 'realistic')">A fresh pizza on a wooden table</span>
+          <span class="chip" onclick="setPrompt('A red sports car speeding on a mountain road', 'realistic')">A red sports car on mountain road</span>
+          <span class="chip" onclick="setPrompt('A glowing neon cyberpunk dragon flying over Tokyo at night, digital art', 'ai_art')">Cyberpunk dragon over Tokyo (AI Art)</span>
+          <span class="chip" onclick="setPrompt('An astronaut riding a horse on Mars under a glowing cosmic nebula, concept artwork', 'ai_art')">Astronaut riding horse on Mars (AI Art)</span>
         </div>
 
         <div class="sliders-row">
@@ -370,39 +409,52 @@
           </div>
         </div>
 
-        <div class="seed-box">
-          <label class="badge">Seed (blank = random)</label>
-          <div class="seed-row">
-            <input type="number" id="seedBox" value="1000" placeholder="Seed"/>
-            <button type="button" class="btn-dice" onclick="randomSeed()">🎲 Random</button>
+        <div class="sliders-row">
+          <div>
+            <label class="badge">Generation Style</label>
+            <select id="modeSelect">
+              <option value="auto" selected>✨ Auto (Realistic + AI Art)</option>
+              <option value="realistic">📷 Photorealistic</option>
+              <option value="ai_art">🎨 AI Imaginary / Artwork</option>
+            </select>
+          </div>
+          <div class="seed-box" style="margin-bottom:0;">
+            <label class="badge">Seed (blank = random)</label>
+            <div class="seed-row">
+              <input type="number" id="seedBox" value="1000" placeholder="Random"/>
+              <button type="button" class="btn-dice" onclick="randomSeed()">🎲</button>
+            </div>
           </div>
         </div>
 
-        <button class="btn-generate" id="genBtn" onclick="generateImages()">
+        <button class="btn-generate" id="genBtn" style="margin-top:16px;" onclick="generateImages()">
           <span>🖌️ Generate</span>
         </button>
       </div>
 
-      <!-- Output Gallery (scale 5) -->
+      <!-- Output Gallery -->
       <div class="card">
         <div class="gallery-header">
           <span class="badge">🖼️ Generated Images</span>
-          <span class="status-tag" id="statusBadge">● Ready (stabilityai/sd-turbo)</span>
+          <span class="status-tag" id="statusBadge">● Ready (Diffusion Hybrid Engine)</span>
         </div>
 
         <div class="output-gallery" id="outputGallery">
-          <!-- Default loaded images from task1 output -->
-          <div class="gallery-item" onclick="openModal(this)">
+          <div class="gallery-item" onclick="openModal(this)" data-caption="a dog playing with a ball at beach (Sample)">
             <img src="https://raw.githubusercontent.com/lithik-raj/text-to-image-generation-pipeline/main/dog1.png" alt="Generated image 1" onerror="this.onerror=null; this.src='dog1.png';"/>
+            <span class="model-pill">SD-Turbo Sample</span>
           </div>
-          <div class="gallery-item" onclick="openModal(this)">
+          <div class="gallery-item" onclick="openModal(this)" data-caption="a dog playing with a ball at beach (Sample)">
             <img src="https://raw.githubusercontent.com/lithik-raj/text-to-image-generation-pipeline/main/dog2.png" alt="Generated image 2" onerror="this.onerror=null; this.src='dog2.png';"/>
+            <span class="model-pill">SD-Turbo Sample</span>
           </div>
-          <div class="gallery-item" onclick="openModal(this)">
+          <div class="gallery-item" onclick="openModal(this)" data-caption="a dog playing with a ball at beach (Sample)">
             <img src="https://raw.githubusercontent.com/lithik-raj/text-to-image-generation-pipeline/main/dog3.png" alt="Generated image 3" onerror="this.onerror=null; this.src='dog3.png';"/>
+            <span class="model-pill">SD-Turbo Sample</span>
           </div>
-          <div class="gallery-item" onclick="openModal(this)">
+          <div class="gallery-item" onclick="openModal(this)" data-caption="a dog playing with a ball at beach (Sample)">
             <img src="https://raw.githubusercontent.com/lithik-raj/text-to-image-generation-pipeline/main/dog4.png" alt="Generated image 4" onerror="this.onerror=null; this.src='dog4.png';"/>
+            <span class="model-pill">SD-Turbo Sample</span>
           </div>
         </div>
       </div>
@@ -413,28 +465,27 @@
       <h3 class="history-title">📜 Generation History</h3>
       <span class="badge" style="margin-bottom:12px;">🖼️ History (last 20)</span>
       <div class="history-gallery" id="historyGallery">
-        <!-- Initial history items matching demo prompts -->
-        <div class="history-item" onclick="openModal(this)">
-          <img src="https://raw.githubusercontent.com/lithik-raj/text-to-image-generation-pipeline/main/dog1.png" alt="History" onerror="this.src='dog1.png'"/>
+        <div class="history-item" onclick="openModal(this)" data-caption="a dog playing with a ball at beach">
+          <img src="https://raw.githubusercontent.com/lithik-raj/text-to-image-generation-pipeline/main/dog1.png" alt="History" onerror="this.onerror=null; this.src='dog1.png';"/>
           <div class="thumb-prompt">a dog playing with a ball at beach</div>
         </div>
-        <div class="history-item" onclick="openModal(this)">
-          <img src="https://raw.githubusercontent.com/lithik-raj/text-to-image-generation-pipeline/main/dog2.png" alt="History" onerror="this.src='dog2.png'"/>
+        <div class="history-item" onclick="openModal(this)" data-caption="a dog playing with a ball at beach">
+          <img src="https://raw.githubusercontent.com/lithik-raj/text-to-image-generation-pipeline/main/dog2.png" alt="History" onerror="this.onerror=null; this.src='dog2.png';"/>
           <div class="thumb-prompt">a dog playing with a ball at beach</div>
         </div>
-        <div class="history-item" onclick="openModal(this)">
-          <img src="https://raw.githubusercontent.com/lithik-raj/text-to-image-generation-pipeline/main/dog3.png" alt="History" onerror="this.src='dog3.png'"/>
+        <div class="history-item" onclick="openModal(this)" data-caption="a dog playing with a ball at beach">
+          <img src="https://raw.githubusercontent.com/lithik-raj/text-to-image-generation-pipeline/main/dog3.png" alt="History" onerror="this.onerror=null; this.src='dog3.png';"/>
           <div class="thumb-prompt">a dog playing with a ball at beach</div>
         </div>
-        <div class="history-item" onclick="openModal(this)">
-          <img src="https://raw.githubusercontent.com/lithik-raj/text-to-image-generation-pipeline/main/dog4.png" alt="History" onerror="this.src='dog4.png'"/>
+        <div class="history-item" onclick="openModal(this)" data-caption="a dog playing with a ball at beach">
+          <img src="https://raw.githubusercontent.com/lithik-raj/text-to-image-generation-pipeline/main/dog4.png" alt="History" onerror="this.onerror=null; this.src='dog4.png';"/>
           <div class="thumb-prompt">a dog playing with a ball at beach</div>
         </div>
       </div>
     </div>
 
     <footer>
-      <p>Pipeline Engine: <strong>stabilityai/sd-turbo</strong> (Adversarial Diffusion Distillation) • Fast Single-Step Pretrained Synthesis • Maintained by <a href="https://github.com/lithik-raj" target="_blank">Lithik Raj</a></p>
+      <p>Diffusion Engines: <strong>Z-Image-Turbo • FLUX.1-schnell • SD3.5-Turbo • stabilityai/sd-turbo • AI Horde</strong> • Maintained by <a href="https://github.com/lithik-raj/text-to-image-generation-pipeline" target="_blank">Lithik Raj</a></p>
     </footer>
   </div>
 
@@ -443,19 +494,20 @@
     <div class="modal-content" onclick="event.stopPropagation()">
       <span class="modal-close" onclick="closeModal()">&times;</span>
       <img id="modalImg" src="" alt="Full Preview"/>
+      <div class="modal-caption" id="modalCaption"></div>
     </div>
   </div>
 
   <script>
-    const CDN_FALLBACK = [
-      'https://raw.githubusercontent.com/lithik-raj/text-to-image-generation-pipeline/main/dog1.png',
-      'https://raw.githubusercontent.com/lithik-raj/text-to-image-generation-pipeline/main/dog2.png',
-      'https://raw.githubusercontent.com/lithik-raj/text-to-image-generation-pipeline/main/dog3.png',
-      'https://raw.githubusercontent.com/lithik-raj/text-to-image-generation-pipeline/main/dog4.png'
-    ];
+    const AI_ART_REGEX = /\b(artwork|digital art|illustration|painting|oil painting|watercolor|anime|manga|cartoon|pixar|cyberpunk|steampunk|fantasy|sci-fi|scifi|futuristic|dragon|unicorn|wizard|magic|mythical|surreal|concept art|3d render|cgi|unreal engine|neon|synthwave|vaporwave|abstract|sketch|drawing|ghibli|van gogh|picasso|imaginary|alien|robot|mecha|nebula|cosmos|spacecraft|spaceship|planet mars)\b/i;
 
-    function setPrompt(text) {
+    let activeRunId = 0;
+
+    function setPrompt(text, suggestedMode) {
       document.getElementById('promptBox').value = text;
+      if (suggestedMode) {
+        document.getElementById('modeSelect').value = 'auto';
+      }
     }
 
     function updateSliders() {
@@ -463,7 +515,6 @@
       const steps = document.getElementById('stepsSlider').value;
       document.getElementById('nVal').innerText = n;
       document.getElementById('stepsVal').innerText = steps;
-
       const gallery = document.getElementById('outputGallery');
       if (window.innerWidth > 600) {
         gallery.style.gridTemplateColumns = `repeat(${Math.min(n, 4)}, 1fr)`;
@@ -474,128 +525,331 @@
       document.getElementById('seedBox').value = Math.floor(Math.random() * 900000) + 1000;
     }
 
-    async function generateImages() {
-      const btn = document.getElementById('genBtn');
-      const status = document.getElementById('statusBadge');
-      const prompt = document.getElementById('promptBox').value.trim();
-      const n = parseInt(document.getElementById('nSlider').value, 10);
-      const steps = parseInt(document.getElementById('stepsSlider').value, 10);
-      const seed = document.getElementById('seedBox').value;
-
-      btn.disabled = true;
-      btn.innerHTML = '<span>⚡ Distilling Latents with SD-Turbo...</span>';
-      status.style.color = '#f59e0b';
-      status.innerText = '● Generating...';
-
-      try {
-        let imageUrls = [];
-
-        // Call backend generate API
-        const response = await fetch('/api/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt, n_images: n, steps, seed })
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          imageUrls = data.images || [];
-        }
-
-        // If backend returns empty, direct client-side fallback query
-        if (!imageUrls || imageUrls.length === 0) {
-          imageUrls = await clientSideGenerate(prompt, n);
-        }
-
-        renderOutputGallery(imageUrls, prompt);
-        prependHistory(imageUrls, prompt);
-
-        status.style.color = '#10b981';
-        status.innerText = `● Generated (${n} images in ~0.14s)`;
-      } catch (err) {
-        console.error('Generation error, using fallback:', err);
-        const fallbackUrls = await clientSideGenerate(prompt, n);
-        renderOutputGallery(fallbackUrls, prompt);
-        prependHistory(fallbackUrls, prompt);
-        status.style.color = '#10b981';
-        status.innerText = `● Generated in ~0.14s`;
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<span>🖌️ Generate</span>';
-      }
+    function resolveMode(prompt, requestedMode) {
+      if (requestedMode === 'realistic' || requestedMode === 'ai_art') return requestedMode;
+      return AI_ART_REGEX.test(prompt) ? 'ai_art' : 'realistic';
     }
 
-    async function clientSideGenerate(prompt, count) {
-      const lower = prompt.toLowerCase();
-      if ((lower.includes('dog') && lower.includes('ball')) || (lower.includes('dog') && lower.includes('beach')) || !prompt) {
-        return CDN_FALLBACK.slice(0, count);
-      }
+    function buildPromptConfig(rawPrompt, requestedMode) {
+      const mode = resolveMode(rawPrompt, requestedMode);
+      let enhanced = rawPrompt.trim();
+      let negative = 'blurry, distorted, mutated, deformed, low quality, watermark, signature, text, worst quality';
 
-      try {
-        // Query Wikimedia Commons with zero rate-limit and CORS enabled
-        const words = prompt.replace(/[^a-zA-Z0-9\s]/g, '').split(/\s+/).filter(w => !['a','an','the','in','on','at','for','with','two','three','photorealistic'].includes(w.toLowerCase()));
-        const cleanQ = words.slice(0, 3).join(' ') || prompt;
-        const res = await fetch(`https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(cleanQ)}&gsrnamespace=6&gsrlimit=${Math.max(count, 4)}&prop=imageinfo&iiprop=url|mime&origin=*&format=json`);
-        if (res.ok) {
-          const d = await res.json();
-          const pages = (d.query && d.query.pages) || {};
-          const urls = [];
-          for (const k in pages) {
-            const info = pages[k].imageinfo;
-            if (info && info[0] && ['image/jpeg', 'image/png', 'image/webp'].includes(info[0].mime)) {
-              urls.push(info[0].url);
-            }
-          }
-          if (urls.length > 0) {
-            while (urls.length < count) {
-              urls.push(urls[urls.length % urls.length]);
-            }
-            return urls.slice(0, count);
-          }
+      if (mode === 'ai_art') {
+        if (!/\b(art|artwork|painting|illustration|render|anime|cartoon|sketch)\b/i.test(enhanced)) {
+          enhanced = `${enhanced}, highly detailed digital artwork, vivid colors, rich composition`;
         }
-      } catch (e) {
-        console.warn('Client search fallback error:', e);
+      } else {
+        if (!/\b(photorealistic|photo|photography|realistic)\b/i.test(enhanced)) {
+          enhanced = `${enhanced}, natural lighting, crisp sharp focus, photorealistic photography`;
+        }
+        negative += ', cartoon, drawing, anime, illustration, extra limbs, bad anatomy';
       }
-
-      return CDN_FALLBACK.slice(0, count);
+      return { mode, enhanced, negative };
     }
 
-    function renderOutputGallery(urls, prompt) {
+    function renderSkeletons(n, modeLabel) {
       const gallery = document.getElementById('outputGallery');
       gallery.innerHTML = '';
       if (window.innerWidth > 600) {
-        gallery.style.gridTemplateColumns = `repeat(${Math.min(urls.length, 4)}, 1fr)`;
+        gallery.style.gridTemplateColumns = `repeat(${Math.min(n, 4)}, 1fr)`;
       }
-
-      urls.forEach((url, i) => {
-        const item = document.createElement('div');
-        item.className = 'gallery-item';
-        item.onclick = function() { openModal(this); };
-        item.innerHTML = `<img src="${url}" alt="${prompt} (${i+1})" onerror="this.onerror=null; this.src='${CDN_FALLBACK[i % 4]}'"/>`;
-        gallery.appendChild(item);
-      });
+      for (let i = 0; i < n; i++) {
+        const div = document.createElement('div');
+        div.id = `slot-${i}`;
+        div.className = 'skeleton-slot';
+        div.innerHTML = `<div>⚡ Synthesizing #${i + 1}</div><div style="font-weight:400; font-size:0.68rem; margin-top:4px; opacity:0.85;">${modeLabel}</div>`;
+        gallery.appendChild(div);
+      }
     }
 
-    function prependHistory(urls, prompt) {
-      const hist = document.getElementById('historyGallery');
-      urls.forEach((url, i) => {
-        const item = document.createElement('div');
-        item.className = 'history-item';
-        item.onclick = function() { openModal(this); };
-        item.innerHTML = `<img src="${url}" alt="History" onerror="this.onerror=null; this.src='${CDN_FALLBACK[i % 4]}'"/><div class="thumb-prompt" title="${prompt}">${prompt}</div>`;
-        hist.insertBefore(item, hist.firstChild);
-      });
+    function fillSlot(slotIdx, url, engineName, rawPrompt, runId) {
+      if (runId !== activeRunId) return false;
+      const slotEl = document.getElementById(`slot-${slotIdx}`);
+      if (!slotEl || slotEl.dataset.filled === '1') return false;
 
-      // Keep last 20
+      slotEl.dataset.filled = '1';
+      slotEl.className = 'gallery-item';
+      slotEl.dataset.caption = `${rawPrompt} — ${engineName}`;
+      slotEl.onclick = function() { openModal(this); };
+      slotEl.innerHTML = `<img src="${url}" referrerpolicy="no-referrer" alt="${rawPrompt.replace(/"/g, '')}"/><span class="model-pill">${engineName}</span>`;
+
+      prependSingleHistory(url, rawPrompt, engineName);
+      return true;
+    }
+
+    function prependSingleHistory(url, prompt, engineName) {
+      const hist = document.getElementById('historyGallery');
+      const item = document.createElement('div');
+      item.className = 'history-item';
+      item.dataset.caption = `${prompt} — ${engineName}`;
+      item.onclick = function() { openModal(this); };
+      item.innerHTML = `<img src="${url}" referrerpolicy="no-referrer" alt="History"/><div class="thumb-prompt" title="${prompt.replace(/"/g, '')}">${prompt}</div>`;
+      hist.insertBefore(item, hist.firstChild);
       while (hist.children.length > 20) {
         hist.removeChild(hist.lastChild);
       }
+    }
+
+    function extractGradioImageUrl(sseText) {
+      let lastEvent = '';
+      for (const rawLine of sseText.split('\n')) {
+        const line = rawLine.trim();
+        if (line.startsWith('event:')) {
+          lastEvent = line.slice(6).trim();
+        } else if (lastEvent === 'complete' && line.startsWith('data:')) {
+          try {
+            const parsed = JSON.parse(line.slice(5).trim());
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              const first = parsed[0];
+              if (first && typeof first === 'object' && first.url) return first.url;
+              if (Array.isArray(first) && first[0]) {
+                const nested = first[0].image || first[0];
+                if (nested && nested.url) return nested.url;
+              }
+            }
+          } catch (_) {}
+        }
+      }
+      return null;
+    }
+
+    async function callGradioSpace(baseUrl, endpoint, payload, timeoutMs = 28000, externalSignal) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      const onExternalAbort = () => controller.abort();
+      if (externalSignal) {
+        if (externalSignal.aborted) { clearTimeout(timer); throw new Error('Aborted'); }
+        externalSignal.addEventListener('abort', onExternalAbort, { once: true });
+      }
+
+      try {
+        const res = await fetch(`${baseUrl}/gradio_api/call${endpoint}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data: payload }),
+          signal: controller.signal
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const { event_id } = await res.json();
+        if (!event_id) throw new Error('Missing event_id');
+
+        const streamRes = await fetch(`${baseUrl}/gradio_api/call${endpoint}/${event_id}`, {
+          signal: controller.signal
+        });
+        if (!streamRes.ok) throw new Error(`Stream HTTP ${streamRes.status}`);
+        const sseText = await streamRes.text();
+        const url = extractGradioImageUrl(sseText);
+        if (!url) throw new Error('No output returned');
+        return url;
+      } finally {
+        clearTimeout(timer);
+        if (externalSignal) externalSignal.removeEventListener('abort', onExternalAbort);
+      }
+    }
+
+    function buildGpuSlotTask(slotIdx, cfg, steps, seed, abortSignal) {
+      const zSteps = Math.min(Math.max(steps + 4, 5), 8);
+      const turboSteps = Math.min(Math.max(steps, 2), 4);
+      const engines = [
+        {
+          name: 'Z-Image-Turbo',
+          run: () => callGradioSpace('https://mrfakename-z-image-turbo.hf.space', '/generate_image', [cfg.enhanced, 512, 512, zSteps, seed, false], 24000, abortSignal)
+        },
+        {
+          name: 'Z-Image-Turbo HD',
+          run: () => callGradioSpace('https://tongyi-mai-z-image-turbo.hf.space', '/generate', [cfg.enhanced, '1024x1024 ( 1:1 )', seed, zSteps, 3.0, false, []], 28000, abortSignal)
+        },
+        {
+          name: 'FLUX.1-schnell',
+          run: () => callGradioSpace('https://black-forest-labs-flux-1-schnell.hf.space', '/infer', [cfg.enhanced, seed, false, 512, 512, turboSteps], 26000, abortSignal)
+        },
+        {
+          name: 'SD3.5-Large-Turbo',
+          run: () => callGradioSpace('https://stabilityai-stable-diffusion-3-5-large-turbo.hf.space', '/infer', [cfg.enhanced, cfg.negative, seed, false, 512, 512, 0.0, turboSteps], 26000, abortSignal)
+        }
+      ];
+      return engines[slotIdx % engines.length];
+    }
+
+    async function runHordeFallback(rawPrompt, modeSelect, steps, baseSeed, pendingSlots, runId, statusEl, abortSignal) {
+      const startRes = await fetch('/api/horde/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: rawPrompt,
+          n_images: pendingSlots.length,
+          steps,
+          seed: baseSeed,
+          mode: modeSelect
+        }),
+        signal: abortSignal
+      });
+      const startData = await startRes.json();
+      if (!startRes.ok || !startData.success || !startData.job_id) {
+        throw new Error(startData.error || 'Horde start failed');
+      }
+
+      const jobId = startData.job_id;
+      for (let poll = 0; poll < 26; poll++) {
+        if (runId !== activeRunId || abortSignal.aborted) return [];
+        await new Promise(r => setTimeout(r, 3500));
+        if (runId !== activeRunId || abortSignal.aborted) return [];
+
+        const stRes = await fetch(`/api/horde/status/${jobId}`, { signal: abortSignal });
+        const st = await stRes.json();
+        if (st.done) {
+          return { images: st.images || [], model: st.model || 'AI Horde Diffusion' };
+        }
+        if (pendingSlots.some(idx => {
+          const el = document.getElementById(`slot-${idx}`);
+          return el && el.dataset.filled !== '1';
+        })) {
+          const eta = st.wait_time ? `ETA ~${st.wait_time}s` : 'rendering';
+          statusEl.innerText = `● Generating on Distributed Cluster (${eta})...`;
+        }
+      }
+      throw new Error('Horde timeout');
+    }
+
+    async function generateImages() {
+      const btn = document.getElementById('genBtn');
+      const status = document.getElementById('statusBadge');
+      const rawPrompt = document.getElementById('promptBox').value.trim() || 'a dog playing with a ball at beach';
+      const n = parseInt(document.getElementById('nSlider').value, 10);
+      const steps = parseInt(document.getElementById('stepsSlider').value, 10);
+      const modeSelect = document.getElementById('modeSelect').value;
+      const seedRaw = document.getElementById('seedBox').value.trim();
+      const baseSeed = seedRaw !== '' ? parseInt(seedRaw, 10) : (Math.floor(Math.random() * 900000) + 1000);
+
+      const runId = ++activeRunId;
+      const tStart = performance.now();
+      const cfg = buildPromptConfig(rawPrompt, modeSelect);
+      const modeBadge = cfg.mode === 'ai_art' ? 'AI Imaginary / Artwork' : 'Photorealistic Photography';
+
+      btn.disabled = true;
+      btn.innerHTML = '<span>⚡ Synthesizing with Diffusion Models...</span>';
+      status.style.color = '#d97706';
+      status.innerText = `● Running ${modeBadge} (${n} image${n > 1 ? 's' : ''})...`;
+      renderSkeletons(n, modeBadge);
+
+      const tier1Controller = new AbortController();
+      const failedSlots = [];
+      let completedCount = 0;
+
+      // Tier 1: Fast Parallel GPU Diffusion Pool (Z-Image-Turbo, FLUX.1-schnell, SD3.5-Turbo)
+      const tier1Promises = [];
+      for (let i = 0; i < n; i++) {
+        const task = buildGpuSlotTask(i, cfg, steps, baseSeed + i, tier1Controller.signal);
+        const p = task.run()
+          .then(url => {
+            if (fillSlot(i, url, task.name, rawPrompt, runId)) {
+              completedCount++;
+              if (runId === activeRunId) {
+                status.innerText = `● ${completedCount}/${n} synthesized via ${task.name}...`;
+              }
+            }
+          })
+          .catch(() => {
+            failedSlots.push(i);
+          });
+        tier1Promises.push(p);
+      }
+
+      await Promise.all(tier1Promises);
+      if (runId !== activeRunId) return;
+
+      // Tier 2 & Tier 3 Race: Zero-limit CPU SD-Turbo + AI Horde Cluster for any remaining slots
+      const remainingSlots = [];
+      for (let i = 0; i < n; i++) {
+        const el = document.getElementById(`slot-${i}`);
+        if (el && el.dataset.filled !== '1') remainingSlots.push(i);
+      }
+
+      if (remainingSlots.length > 0) {
+        status.innerText = `● Finishing ${remainingSlots.length} slot(s) via SD-Turbo & Diffusion Cluster...`;
+        const fallbackAbort = new AbortController();
+        const racePromises = [];
+
+        // Launch up to 2 direct CPU stabilityai/sd-turbo calls (zero ZeroGPU quota!)
+        const cpuLimit = Math.min(remainingSlots.length, 2);
+        for (let k = 0; k < cpuLimit; k++) {
+          const targetIdx = remainingSlots[k];
+          racePromises.push(
+            callGradioSpace(
+              'https://cheeseman182-image-generator-using-sd-turbo.hf.space',
+              '/generate_and_return_numpy',
+              [cfg.enhanced, baseSeed + 500 + targetIdx, 512, 512],
+              50000,
+              fallbackAbort.signal
+            ).then(url => {
+              if (fillSlot(targetIdx, url, 'SD-Turbo (CPU)', rawPrompt, runId)) {
+                completedCount++;
+                if (completedCount >= n) fallbackAbort.abort();
+              }
+            }).catch(() => {})
+          );
+        }
+
+        // Simultaneously launch AI Horde Distributed Cluster for all remaining slots
+        racePromises.push(
+          runHordeFallback(rawPrompt, modeSelect, steps, baseSeed + 700, remainingSlots, runId, status, fallbackAbort.signal)
+            .then(res => {
+              if (!res || !res.images) return;
+              let imgPtr = 0;
+              for (const idx of remainingSlots) {
+                const el = document.getElementById(`slot-${idx}`);
+                if (el && el.dataset.filled !== '1' && imgPtr < res.images.length) {
+                  if (fillSlot(idx, res.images[imgPtr], res.model, rawPrompt, runId)) {
+                    completedCount++;
+                  }
+                  imgPtr++;
+                }
+              }
+              if (completedCount >= n) fallbackAbort.abort();
+            })
+            .catch(() => {})
+        );
+
+        await Promise.all(racePromises);
+      }
+
+      if (runId !== activeRunId) return;
+
+      // Mark any unfilled slot gracefully without substituting unrelated images
+      for (let i = 0; i < n; i++) {
+        const el = document.getElementById(`slot-${i}`);
+        if (el && el.dataset.filled !== '1') {
+          el.className = 'gallery-item';
+          el.style.display = 'flex';
+          el.style.alignItems = 'center';
+          el.style.justifyContent = 'center';
+          el.style.padding = '12px';
+          el.style.textAlign = 'center';
+          el.style.fontSize = '0.78rem';
+          el.style.color = '#64748b';
+          el.innerText = 'Cluster busy — click Generate to retry slot';
+        }
+      }
+
+      const elapsed = ((performance.now() - tStart) / 1000).toFixed(1);
+      if (completedCount > 0) {
+        status.style.color = '#10b981';
+        status.innerText = `● Generated ${completedCount}/${n} (${modeBadge}) in ${elapsed}s`;
+      } else {
+        status.style.color = '#ef4444';
+        status.innerText = `● Network busy — please click Generate again`;
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = '<span>🖌️ Generate</span>';
     }
 
     function openModal(el) {
       const img = el.querySelector('img');
       if (img && img.src) {
         document.getElementById('modalImg').src = img.src;
+        document.getElementById('modalCaption').innerText = el.dataset.caption || '';
         document.getElementById('imageModal').style.display = 'flex';
       }
     }

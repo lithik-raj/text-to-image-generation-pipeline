@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://github.com/lithik-raj/text-to-image-generation-pipeline"><img src="https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github" alt="GitHub Repo" /></a>
   <a href="https://vercel.com/new/clone?repository-url=https://github.com/lithik-raj/text-to-image-generation-pipeline"><img src="https://img.shields.io/badge/Deploy%20with-Vercel-black?style=for-the-badge&logo=vercel" alt="Deploy on Vercel" /></a>
-  <a href="https://text-to-image-generation-pipeline-lithik-raj.vercel.app"><img src="https://img.shields.io/badge/Live%20Demo-Vercel%20Production-00ffc8?style=for-the-badge&logo=vercel" alt="Live Demo" /></a>
+  <a href="https://text-to-image-generation-pipeline.vercel.app"><img src="https://img.shields.io/badge/Live%20Demo-Vercel%20Production-00ffc8?style=for-the-badge&logo=vercel" alt="Live Demo" /></a>
   <img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="License: MIT" />
 </p>
 
@@ -27,7 +27,7 @@
 |---|---|---|
 | 🐙 **GitHub Repository** | [github.com/lithik-raj/text-to-image-generation-pipeline](https://github.com/lithik-raj/text-to-image-generation-pipeline) | Fast-inference notebook, pipeline scripts & weights |
 | ⚡ **Vercel 1-Click Deploy** | [Deploy to Vercel](https://vercel.com/new/clone?repository-url=https://github.com/lithik-raj/text-to-image-generation-pipeline) | Instant zero-config cloud deployment |
-| 🌐 **Vercel Live Application** | [text-to-image-generation-pipeline-lithik-raj.vercel.app](https://text-to-image-generation-pipeline-lithik-raj.vercel.app) | Live interactive SD-Turbo studio & benchmark lab |
+| 🌐 **Vercel Live Application** | [text-to-image-generation-pipeline.vercel.app](https://text-to-image-generation-pipeline.vercel.app) | Live interactive SD-Turbo studio & benchmark lab |
 
 ---
 
