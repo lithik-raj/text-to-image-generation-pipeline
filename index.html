@@ -199,15 +199,18 @@
     }
     .output-gallery {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 10px;
       min-height: 240px;
+      align-items: stretch;
     }
     @media (max-width: 600px) {
-      .output-gallery { grid-template-columns: repeat(2, 1fr); }
+      .output-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
     .gallery-item {
       position: relative;
+      width: 100%;
+      min-width: 0;
       aspect-ratio: 1;
       background: #f1f5f9;
       border-radius: 8px;
@@ -245,6 +248,8 @@
 
     /* Skeleton Loader */
     .skeleton-slot {
+      width: 100%;
+      min-width: 0;
       aspect-ratio: 1;
       border-radius: 8px;
       border: 1px solid var(--border);
@@ -256,10 +261,11 @@
       align-items: center;
       justify-content: center;
       color: var(--badge-text);
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 600;
       text-align: center;
-      padding: 10px;
+      padding: 8px;
+      overflow-wrap: anywhere;
     }
     @keyframes shimmer {
       to { background-position-x: -200%; }
@@ -517,7 +523,7 @@
       document.getElementById('stepsVal').innerText = steps;
       const gallery = document.getElementById('outputGallery');
       if (window.innerWidth > 600) {
-        gallery.style.gridTemplateColumns = `repeat(${Math.min(n, 4)}, 1fr)`;
+        gallery.style.gridTemplateColumns = `repeat(${Math.min(n, 4)}, minmax(0, 1fr))`;
       }
     }
 
@@ -552,7 +558,7 @@
       const gallery = document.getElementById('outputGallery');
       gallery.innerHTML = '';
       if (window.innerWidth > 600) {
-        gallery.style.gridTemplateColumns = `repeat(${Math.min(n, 4)}, 1fr)`;
+        gallery.style.gridTemplateColumns = `repeat(${Math.min(n, 4)}, minmax(0, 1fr))`;
       }
       for (let i = 0; i < n; i++) {
         const div = document.createElement('div');
@@ -591,27 +597,30 @@
       }
     }
 
-    function extractGradioImageUrl(sseText) {
+    function parseGradioSSE(sseText) {
       let lastEvent = '';
+      let errorText = '';
       for (const rawLine of sseText.split('\n')) {
         const line = rawLine.trim();
         if (line.startsWith('event:')) {
           lastEvent = line.slice(6).trim();
+        } else if (lastEvent === 'error' && line.startsWith('data:')) {
+          errorText += line.slice(5).trim();
         } else if (lastEvent === 'complete' && line.startsWith('data:')) {
           try {
             const parsed = JSON.parse(line.slice(5).trim());
             if (Array.isArray(parsed) && parsed.length > 0) {
               const first = parsed[0];
-              if (first && typeof first === 'object' && first.url) return first.url;
+              if (first && typeof first === 'object' && first.url) return { url: first.url };
               if (Array.isArray(first) && first[0]) {
                 const nested = first[0].image || first[0];
-                if (nested && nested.url) return nested.url;
+                if (nested && nested.url) return { url: nested.url };
               }
             }
           } catch (_) {}
         }
       }
-      return null;
+      return { url: null, isQuota: /quota|exceeded|runs limit/i.test(errorText) };
     }
 
     async function callGradioSpace(baseUrl, endpoint, payload, timeoutMs = 28000, externalSignal) {
@@ -639,19 +648,23 @@
         });
         if (!streamRes.ok) throw new Error(`Stream HTTP ${streamRes.status}`);
         const sseText = await streamRes.text();
-        const url = extractGradioImageUrl(sseText);
-        if (!url) throw new Error('No output returned');
-        return url;
+        const parsed = parseGradioSSE(sseText);
+        if (!parsed.url) {
+          const err = new Error('No output returned');
+          err.isQuota = parsed.isQuota;
+          throw err;
+        }
+        return parsed.url;
       } finally {
         clearTimeout(timer);
         if (externalSignal) externalSignal.removeEventListener('abort', onExternalAbort);
       }
     }
 
-    function buildGpuSlotTask(slotIdx, cfg, steps, seed, abortSignal) {
+    function buildGpuEngines(cfg, steps, seed, abortSignal) {
       const zSteps = Math.min(Math.max(steps + 4, 5), 8);
       const turboSteps = Math.min(Math.max(steps, 2), 4);
-      const engines = [
+      return [
         {
           name: 'Z-Image-Turbo',
           run: () => callGradioSpace('https://mrfakename-z-image-turbo.hf.space', '/generate_image', [cfg.enhanced, 512, 512, zSteps, seed, false], 24000, abortSignal)
@@ -669,7 +682,6 @@
           run: () => callGradioSpace('https://stabilityai-stable-diffusion-3-5-large-turbo.hf.space', '/infer', [cfg.enhanced, cfg.negative, seed, false, 512, 512, 0.0, turboSteps], 26000, abortSignal)
         }
       ];
-      return engines[slotIdx % engines.length];
     }
 
     async function runHordeFallback(rawPrompt, modeSelect, steps, baseSeed, pendingSlots, runId, statusEl, abortSignal) {
@@ -691,7 +703,7 @@
       }
 
       const jobId = startData.job_id;
-      for (let poll = 0; poll < 26; poll++) {
+      for (let poll = 0; poll < 14; poll++) {
         if (runId !== activeRunId || abortSignal.aborted) return [];
         await new Promise(r => setTimeout(r, 3500));
         if (runId !== activeRunId || abortSignal.aborted) return [];
@@ -706,7 +718,7 @@
           return el && el.dataset.filled !== '1';
         })) {
           const eta = st.wait_time ? `ETA ~${st.wait_time}s` : 'rendering';
-          statusEl.innerText = `● Generating on Distributed Cluster (${eta})...`;
+          statusEl.innerText = `● Generating via SD-Turbo & Diffusion Cluster (${eta})...`;
         }
       }
       throw new Error('Horde timeout');
@@ -734,32 +746,52 @@
       renderSkeletons(n, modeBadge);
 
       const tier1Controller = new AbortController();
-      const failedSlots = [];
       let completedCount = 0;
+      let zeroGpuExhausted = false;
 
-      // Tier 1: Fast Parallel GPU Diffusion Pool (Z-Image-Turbo, FLUX.1-schnell, SD3.5-Turbo)
-      const tier1Promises = [];
-      for (let i = 0; i < n; i++) {
-        const task = buildGpuSlotTask(i, cfg, steps, baseSeed + i, tier1Controller.signal);
-        const p = task.run()
-          .then(url => {
-            if (fillSlot(i, url, task.name, rawPrompt, runId)) {
-              completedCount++;
-              if (runId === activeRunId) {
-                status.innerText = `● ${completedCount}/${n} synthesized via ${task.name}...`;
+      // Tier 1: Concurrency-2 sliding worker pool across H200 Spaces (prevents 2-concurrent-run ZeroGPU throttling)
+      const slotQueue = Array.from({ length: n }, (_, i) => i);
+      async function runGpuWorker() {
+        while (slotQueue.length > 0 && runId === activeRunId && !zeroGpuExhausted) {
+          const i = slotQueue.shift();
+          const engines = buildGpuEngines(cfg, steps, baseSeed + i, tier1Controller.signal);
+          const primary = engines[i % engines.length];
+          const backup = engines[(i + 1) % engines.length];
+
+          let url = null;
+          let usedName = primary.name;
+          try {
+            url = await primary.run();
+          } catch (err) {
+            if (err && err.isQuota) {
+              zeroGpuExhausted = true;
+              break;
+            }
+            try {
+              usedName = backup.name;
+              url = await backup.run();
+            } catch (err2) {
+              if (err2 && err2.isQuota) {
+                zeroGpuExhausted = true;
+                break;
               }
             }
-          })
-          .catch(() => {
-            failedSlots.push(i);
-          });
-        tier1Promises.push(p);
+          }
+
+          if (url && fillSlot(i, url, usedName, rawPrompt, runId)) {
+            completedCount++;
+            if (runId === activeRunId) {
+              status.innerText = `● ${completedCount}/${n} synthesized via ${usedName}...`;
+            }
+          }
+        }
       }
 
-      await Promise.all(tier1Promises);
+      const workers = Array.from({ length: Math.min(2, n) }, () => runGpuWorker());
+      await Promise.all(workers);
       if (runId !== activeRunId) return;
 
-      // Tier 2 & Tier 3 Race: Zero-limit CPU SD-Turbo + AI Horde Cluster for any remaining slots
+      // Tier 2 & Tier 3 Race: Sequential CPU SD-Turbo + AI Horde Cluster for any remaining slots
       const remainingSlots = [];
       for (let i = 0; i < n; i++) {
         const el = document.getElementById(`slot-${i}`);
@@ -767,51 +799,50 @@
       }
 
       if (remainingSlots.length > 0) {
-        status.innerText = `● Finishing ${remainingSlots.length} slot(s) via SD-Turbo & Diffusion Cluster...`;
+        status.innerText = `● Synthesizing ${remainingSlots.length} slot(s) via SD-Turbo & Diffusion Cluster...`;
         const fallbackAbort = new AbortController();
-        const racePromises = [];
 
-        // Launch up to 2 direct CPU stabilityai/sd-turbo calls (zero ZeroGPU quota!)
-        const cpuLimit = Math.min(remainingSlots.length, 2);
-        for (let k = 0; k < cpuLimit; k++) {
-          const targetIdx = remainingSlots[k];
-          racePromises.push(
-            callGradioSpace(
-              'https://cheeseman182-image-generator-using-sd-turbo.hf.space',
-              '/generate_and_return_numpy',
-              [cfg.enhanced, baseSeed + 500 + targetIdx, 512, 512],
-              50000,
-              fallbackAbort.signal
-            ).then(url => {
+        // Sequential CPU SD-Turbo lane (avoids CPU thrashing; zero ZeroGPU quota!)
+        const cpuTask = (async () => {
+          for (const targetIdx of remainingSlots) {
+            if (runId !== activeRunId || fallbackAbort.signal.aborted) break;
+            const el = document.getElementById(`slot-${targetIdx}`);
+            if (!el || el.dataset.filled === '1') continue;
+            try {
+              const url = await callGradioSpace(
+                'https://cheeseman182-image-generator-using-sd-turbo.hf.space',
+                '/generate_and_return_numpy',
+                [cfg.enhanced, baseSeed + 500 + targetIdx, 512, 512],
+                48000,
+                fallbackAbort.signal
+              );
               if (fillSlot(targetIdx, url, 'SD-Turbo (CPU)', rawPrompt, runId)) {
                 completedCount++;
                 if (completedCount >= n) fallbackAbort.abort();
               }
-            }).catch(() => {})
-          );
-        }
+            } catch (_) {}
+          }
+        })();
 
-        // Simultaneously launch AI Horde Distributed Cluster for all remaining slots
-        racePromises.push(
-          runHordeFallback(rawPrompt, modeSelect, steps, baseSeed + 700, remainingSlots, runId, status, fallbackAbort.signal)
-            .then(res => {
-              if (!res || !res.images) return;
-              let imgPtr = 0;
-              for (const idx of remainingSlots) {
-                const el = document.getElementById(`slot-${idx}`);
-                if (el && el.dataset.filled !== '1' && imgPtr < res.images.length) {
-                  if (fillSlot(idx, res.images[imgPtr], res.model, rawPrompt, runId)) {
-                    completedCount++;
-                  }
-                  imgPtr++;
+        // Simultaneous AI Horde Distributed Cluster lane
+        const hordeTask = runHordeFallback(rawPrompt, modeSelect, steps, baseSeed + 700, remainingSlots, runId, status, fallbackAbort.signal)
+          .then(res => {
+            if (!res || !res.images) return;
+            let imgPtr = 0;
+            for (const idx of remainingSlots) {
+              const el = document.getElementById(`slot-${idx}`);
+              if (el && el.dataset.filled !== '1' && imgPtr < res.images.length) {
+                if (fillSlot(idx, res.images[imgPtr], res.model, rawPrompt, runId)) {
+                  completedCount++;
                 }
+                imgPtr++;
               }
-              if (completedCount >= n) fallbackAbort.abort();
-            })
-            .catch(() => {})
-        );
+            }
+            if (completedCount >= n) fallbackAbort.abort();
+          })
+          .catch(() => {});
 
-        await Promise.all(racePromises);
+        await Promise.all([cpuTask, hordeTask]);
       }
 
       if (runId !== activeRunId) return;
