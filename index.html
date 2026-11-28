@@ -676,10 +676,6 @@
         {
           name: 'FLUX.1-schnell',
           run: () => callGradioSpace('https://black-forest-labs-flux-1-schnell.hf.space', '/infer', [cfg.enhanced, seed, false, 512, 512, turboSteps], 26000, abortSignal)
-        },
-        {
-          name: 'SD3.5-Large-Turbo',
-          run: () => callGradioSpace('https://stabilityai-stable-diffusion-3-5-large-turbo.hf.space', '/infer', [cfg.enhanced, cfg.negative, seed, false, 512, 512, 0.0, turboSteps], 26000, abortSignal)
         }
       ];
     }
@@ -703,7 +699,7 @@
       }
 
       const jobId = startData.job_id;
-      for (let poll = 0; poll < 14; poll++) {
+      for (let poll = 0; poll < 22; poll++) {
         if (runId !== activeRunId || abortSignal.aborted) return [];
         await new Promise(r => setTimeout(r, 3500));
         if (runId !== activeRunId || abortSignal.aborted) return [];
@@ -747,34 +743,30 @@
 
       const tier1Controller = new AbortController();
       let completedCount = 0;
-      let zeroGpuExhausted = false;
+      const quotaBlocked = new Set();
 
-      // Tier 1: Concurrency-2 sliding worker pool across H200 Spaces (prevents 2-concurrent-run ZeroGPU throttling)
+      // Tier 1: Concurrency-2 sliding worker pool across low-quota H200 Spaces
       const slotQueue = Array.from({ length: n }, (_, i) => i);
       async function runGpuWorker() {
-        while (slotQueue.length > 0 && runId === activeRunId && !zeroGpuExhausted) {
+        while (slotQueue.length > 0 && runId === activeRunId && quotaBlocked.size < 3) {
           const i = slotQueue.shift();
           const engines = buildGpuEngines(cfg, steps, baseSeed + i, tier1Controller.signal);
-          const primary = engines[i % engines.length];
-          const backup = engines[(i + 1) % engines.length];
+          const candidateOrder = [
+            engines[i % engines.length],
+            engines[(i + 1) % engines.length],
+            engines[(i + 2) % engines.length]
+          ];
 
           let url = null;
-          let usedName = primary.name;
-          try {
-            url = await primary.run();
-          } catch (err) {
-            if (err && err.isQuota) {
-              zeroGpuExhausted = true;
-              break;
-            }
+          let usedName = '';
+          for (const eng of candidateOrder) {
+            if (quotaBlocked.has(eng.name) || runId !== activeRunId) continue;
             try {
-              usedName = backup.name;
-              url = await backup.run();
-            } catch (err2) {
-              if (err2 && err2.isQuota) {
-                zeroGpuExhausted = true;
-                break;
-              }
+              usedName = eng.name;
+              url = await eng.run();
+              if (url) break;
+            } catch (err) {
+              if (err && err.isQuota) quotaBlocked.add(eng.name);
             }
           }
 
@@ -802,7 +794,7 @@
         status.innerText = `● Synthesizing ${remainingSlots.length} slot(s) via SD-Turbo & Diffusion Cluster...`;
         const fallbackAbort = new AbortController();
 
-        // Sequential CPU SD-Turbo lane (avoids CPU thrashing; zero ZeroGPU quota!)
+        // Sequential CPU SD-Turbo lane (95s allowance; avoids CPU thrashing; zero ZeroGPU quota!)
         const cpuTask = (async () => {
           for (const targetIdx of remainingSlots) {
             if (runId !== activeRunId || fallbackAbort.signal.aborted) break;
@@ -813,7 +805,7 @@
                 'https://cheeseman182-image-generator-using-sd-turbo.hf.space',
                 '/generate_and_return_numpy',
                 [cfg.enhanced, baseSeed + 500 + targetIdx, 512, 512],
-                48000,
+                95000,
                 fallbackAbort.signal
               );
               if (fillSlot(targetIdx, url, 'SD-Turbo (CPU)', rawPrompt, runId)) {
