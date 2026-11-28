@@ -401,17 +401,17 @@
           <div class="slider-box">
             <div class="slider-header">
               <span class="badge" style="margin:0; padding:2px 6px;">Number of images</span>
-              <span class="slider-val" id="nVal">4</span>
+              <span class="slider-val" id="nVal">2</span>
             </div>
-            <input type="range" id="nSlider" min="1" max="8" value="4" step="1" oninput="updateSliders()"/>
+            <input type="range" id="nSlider" min="1" max="8" value="2" step="1" oninput="updateSliders()"/>
           </div>
 
           <div class="slider-box">
             <div class="slider-header">
               <span class="badge" style="margin:0; padding:2px 6px;">Diffusion steps (1 = fastest)</span>
-              <span class="slider-val" id="stepsVal">4</span>
+              <span class="slider-val" id="stepsVal">3</span>
             </div>
-            <input type="range" id="stepsSlider" min="1" max="4" value="4" step="1" oninput="updateSliders()"/>
+            <input type="range" id="stepsSlider" min="1" max="4" value="3" step="1" oninput="updateSliders()"/>
           </div>
         </div>
 
@@ -662,22 +662,56 @@
     }
 
     function buildGpuEngines(cfg, steps, seed, abortSignal) {
-      const zSteps = Math.min(Math.max(steps + 4, 5), 8);
+      const zSteps = Math.min(Math.max(steps + 3, 4), 8);
       const turboSteps = Math.min(Math.max(steps, 2), 4);
       return [
         {
+          id: 'mrfakename',
           name: 'Z-Image-Turbo',
-          run: () => callGradioSpace('https://mrfakename-z-image-turbo.hf.space', '/generate_image', [cfg.enhanced, 512, 512, zSteps, seed, false], 24000, abortSignal)
+          run: () => callGradioSpace('https://mrfakename-z-image-turbo.hf.space', '/generate_image', [cfg.enhanced, 512, 512, zSteps, seed, false], 14000, abortSignal)
         },
         {
+          id: 'tongyi',
           name: 'Z-Image-Turbo HD',
-          run: () => callGradioSpace('https://tongyi-mai-z-image-turbo.hf.space', '/generate', [cfg.enhanced, '1024x1024 ( 1:1 )', seed, zSteps, 3.0, false, []], 28000, abortSignal)
+          run: () => callGradioSpace('https://tongyi-mai-z-image-turbo.hf.space', '/generate', [cfg.enhanced, '1024x1024 ( 1:1 )', seed, zSteps, 3.0, false, []], 18000, abortSignal)
         },
         {
+          id: 'flux',
           name: 'FLUX.1-schnell',
-          run: () => callGradioSpace('https://black-forest-labs-flux-1-schnell.hf.space', '/infer', [cfg.enhanced, seed, false, 512, 512, turboSteps], 26000, abortSignal)
+          run: () => callGradioSpace('https://black-forest-labs-flux-1-schnell.hf.space', '/infer', [cfg.enhanced, seed, false, 512, 512, turboSteps], 16000, abortSignal)
         }
       ];
+    }
+
+    async function callVercelFastRelay(engineId, cfg, steps, seed, abortSignal) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 11000);
+      const onExternalAbort = () => controller.abort();
+      if (abortSignal) {
+        if (abortSignal.aborted) { clearTimeout(timer); throw new Error('Aborted'); }
+        abortSignal.addEventListener('abort', onExternalAbort, { once: true });
+      }
+      try {
+        const res = await fetch('/api/fast', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: cfg.enhanced,
+            negative: cfg.negative,
+            steps,
+            seed,
+            engine: engineId
+          }),
+          signal: controller.signal
+        });
+        if (!res.ok) throw new Error(`Relay HTTP ${res.status}`);
+        const d = await res.json();
+        if (!d.success || !d.url) throw new Error(d.error || 'Relay empty');
+        return { url: d.url, name: d.engine || 'Z-Image-Turbo' };
+      } finally {
+        clearTimeout(timer);
+        if (abortSignal) abortSignal.removeEventListener('abort', onExternalAbort);
+      }
     }
 
     async function runHordeFallback(rawPrompt, modeSelect, steps, baseSeed, pendingSlots, runId, statusEl, abortSignal) {
@@ -743,12 +777,14 @@
 
       const tier1Controller = new AbortController();
       let completedCount = 0;
+      let browserZeroGpuBlocked = false;
       const quotaBlocked = new Set();
+      const relayBlocked = new Set();
 
-      // Tier 1: Concurrency-2 sliding worker pool across low-quota H200 Spaces
+      // Tier 1 + Tier 1B: Concurrency-2 worker pool (Browser Direct H200 -> Instant Vercel Cloud Relay)
       const slotQueue = Array.from({ length: n }, (_, i) => i);
       async function runGpuWorker() {
-        while (slotQueue.length > 0 && runId === activeRunId && quotaBlocked.size < 3) {
+        while (slotQueue.length > 0 && runId === activeRunId && (!browserZeroGpuBlocked || relayBlocked.size < 3)) {
           const i = slotQueue.shift();
           const engines = buildGpuEngines(cfg, steps, baseSeed + i, tier1Controller.signal);
           const candidateOrder = [
@@ -759,14 +795,39 @@
 
           let url = null;
           let usedName = '';
-          for (const eng of candidateOrder) {
-            if (quotaBlocked.has(eng.name) || runId !== activeRunId) continue;
-            try {
-              usedName = eng.name;
-              url = await eng.run();
-              if (url) break;
-            } catch (err) {
-              if (err && err.isQuota) quotaBlocked.add(eng.name);
+
+          // 1. Try direct browser H200 generation first (unless IP ZeroGPU quota is already exhausted)
+          if (!browserZeroGpuBlocked) {
+            for (const eng of candidateOrder) {
+              if (browserZeroGpuBlocked || quotaBlocked.has(eng.name) || runId !== activeRunId) break;
+              try {
+                usedName = eng.name;
+                url = await eng.run();
+                if (url) break;
+              } catch (err) {
+                if (err && err.isQuota) {
+                  quotaBlocked.add(eng.name);
+                  browserZeroGpuBlocked = true;
+                  break;
+                }
+              }
+            }
+          }
+
+          // 2. If browser IP hit ZeroGPU quota or failed, immediately try Vercel Fast Cloud Relay (~4-8s)
+          if (!url && runId === activeRunId) {
+            for (const eng of candidateOrder) {
+              if (relayBlocked.has(eng.id) || runId !== activeRunId) continue;
+              try {
+                const relayed = await callVercelFastRelay(eng.id, cfg, steps, baseSeed + i, tier1Controller.signal);
+                if (relayed && relayed.url) {
+                  url = relayed.url;
+                  usedName = relayed.name;
+                  break;
+                }
+              } catch (_) {
+                relayBlocked.add(eng.id);
+              }
             }
           }
 

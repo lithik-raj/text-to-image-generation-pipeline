@@ -102,16 +102,19 @@ def get_active_horde_models() -> dict:
     return _MODEL_CACHE["data"]
 
 
-def pick_horde_models(mode: str) -> list[str]:
+def pick_horde_models(mode: str, allow_xl: bool = False) -> list[str]:
     """Select active, fast AI Horde models tailored to realistic or AI artwork mode."""
     preferred = AI_ART_MODELS if mode == "ai_art" else REALISTIC_MODELS
     active = get_active_horde_models()
     if not active:
-        return preferred[:4]
+        return [m for m in preferred if allow_xl or "XL" not in m][:4]
 
-    avail = [m for m in preferred if m in active and m != "stable_diffusion"]
-    # Prefer fast active multi-worker checkpoints while filtering out extreme long-queue stalls
-    avail.sort(key=lambda m: (0 if active[m].get("eta", 999) <= 150 else 1, -min(active[m].get("count", 1), 4), active[m].get("eta", 999)))
+    avail = [
+        m for m in preferred
+        if m in active and m != "stable_diffusion" and (allow_xl or "XL" not in m)
+    ]
+    # Prioritize lowest queue wait time first, then higher worker count
+    avail.sort(key=lambda m: (0 if active[m].get("eta", 999) <= 25 else 1, active[m].get("eta", 999), -min(active[m].get("count", 1), 6)))
     if not avail:
         return ["ICBINP - I Can't Believe It's Not Photography", "Deliberate", "stable_diffusion"]
     if len(avail) < 3 and "stable_diffusion" in active:
@@ -123,7 +126,7 @@ def submit_horde_job(prompt: str, n_images: int = 4, steps: int = 4, seed=None, 
     """Submit a non-blocking diffusion job to AI Horde."""
     resolved_mode = detect_generation_mode(prompt, mode)
     full_prompt = build_horde_prompt(prompt, resolved_mode)
-    models = pick_horde_models(resolved_mode)
+    models = pick_horde_models(resolved_mode, allow_xl=(int(n_images) == 1))
     mapped_steps = {1: 14, 2: 16, 3: 18, 4: 20}.get(int(steps), 18)
 
     params = {
@@ -155,9 +158,9 @@ def submit_horde_job(prompt: str, n_images: int = 4, steps: int = 4, seed=None, 
     return r.json().get("id"), resolved_mode, models
 
 
-def call_gradio_sync(base_url: str, endpoint: str, data: list, timeout: int = 12):
+def call_gradio_sync(base_url: str, endpoint: str, data: list, timeout: int = 8):
     """Invoke a Hugging Face Gradio Space synchronously within short serverless time budget."""
-    r = requests.post(f"{base_url}/gradio_api/call{endpoint}", json={"data": data}, headers={"User-Agent": "Mozilla/5.0"}, timeout=5)
+    r = requests.post(f"{base_url}/gradio_api/call{endpoint}", json={"data": data}, headers={"User-Agent": "Mozilla/5.0"}, timeout=3.5)
     r.raise_for_status()
     ev = r.json().get("event_id")
     if not ev:
@@ -212,6 +215,50 @@ def health():
         "capabilities": ["photorealistic", "ai_imaginary", "digital_artwork", "unlimited_failover"],
         "interface": "Gradio Web UI (Soft Theme)",
     })
+
+
+@app.route("/api/fast", methods=["POST"])
+def fast_hf_relay():
+    """Fast server-side relay to H200 Gradio Spaces using Vercel's cloud IP."""
+    body = request.get_json(silent=True) or {}
+    prompt = (body.get("prompt") or "a dog playing with a ball at beach").strip()
+    negative = (body.get("negative") or "").strip()
+    steps = int(body.get("steps") or 3)
+    seed = int(body.get("seed") if str(body.get("seed", "")).isdigit() else 1000)
+    engine = (body.get("engine") or "mrfakename").strip().lower()
+
+    z_steps = min(max(steps + 3, 4), 8)
+    flux_steps = min(max(steps, 2), 4)
+
+    engine_map = {
+        "mrfakename": (
+            "Z-Image-Turbo",
+            "https://mrfakename-z-image-turbo.hf.space",
+            "/generate_image",
+            [prompt, 512, 512, z_steps, seed, False],
+        ),
+        "tongyi": (
+            "Z-Image-Turbo HD",
+            "https://tongyi-mai-z-image-turbo.hf.space",
+            "/generate",
+            [prompt, "1024x1024 ( 1:1 )", seed, z_steps, 3.0, False, []],
+        ),
+        "flux": (
+            "FLUX.1-schnell",
+            "https://black-forest-labs-flux-1-schnell.hf.space",
+            "/infer",
+            [prompt, seed, False, 512, 512, flux_steps],
+        ),
+    }
+
+    label, base_url, ep, payload = engine_map.get(engine, engine_map["mrfakename"])
+    try:
+        url = call_gradio_sync(base_url, ep, payload, timeout=9)
+        if url:
+            return jsonify({"success": True, "url": url, "engine": f"{label} (Fast Relay)"})
+        return jsonify({"success": False, "error": "No output"}), 502
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 502
 
 
 @app.route("/api/horde/start", methods=["POST"])
