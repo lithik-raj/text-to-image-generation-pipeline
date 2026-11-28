@@ -671,14 +671,14 @@
           run: () => callGradioSpace('https://mrfakename-z-image-turbo.hf.space', '/generate_image', [cfg.enhanced, 512, 512, zSteps, seed, false], 14000, abortSignal)
         },
         {
+          id: 'flux',
+          name: 'FLUX.1-schnell',
+          run: () => callGradioSpace('https://black-forest-labs-flux-1-schnell.hf.space', '/infer', [cfg.enhanced, seed, false, 512, 512, turboSteps], 15000, abortSignal)
+        },
+        {
           id: 'tongyi',
           name: 'Z-Image-Turbo HD',
           run: () => callGradioSpace('https://tongyi-mai-z-image-turbo.hf.space', '/generate', [cfg.enhanced, '1024x1024 ( 1:1 )', seed, zSteps, 3.0, false, []], 18000, abortSignal)
-        },
-        {
-          id: 'flux',
-          name: 'FLUX.1-schnell',
-          run: () => callGradioSpace('https://black-forest-labs-flux-1-schnell.hf.space', '/infer', [cfg.enhanced, seed, false, 512, 512, turboSteps], 16000, abortSignal)
         }
       ];
     }
